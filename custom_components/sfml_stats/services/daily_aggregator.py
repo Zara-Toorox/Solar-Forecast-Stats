@@ -37,6 +37,11 @@ from ..const import (
     CONF_SENSOR_BATTERY_CHARGE_GRID_DAILY,
     CONF_SENSOR_HOUSE_TO_GRID,
     CONF_SENSOR_PRICE_TOTAL,
+    CONF_SENSOR_BATTERY_TO_HOUSE,
+    CONF_SENSOR_SOLAR_TO_HOUSE,
+    CONF_SENSOR_SOLAR_TO_BATTERY,
+    CONF_SENSOR_GRID_TO_HOUSE,
+    CONF_SENSOR_HOME_CONSUMPTION,
     CONF_BILLING_PRICE_MODE,
     CONF_BILLING_FIXED_PRICE,
     PRICE_MODE_FIXED,
@@ -141,6 +146,9 @@ class DailyEnergyAggregator:
         daily_data["solar_to_house_kwh"] = max(0, solar_yield - battery_charge_solar)
         daily_data["timestamp"] = datetime.now().isoformat()
 
+        # Get data from energy_sources_daily_stats for battery_to_house and other values
+        await self._merge_from_daily_stats(today_str, daily_data)
+
         price_mode = config.get(CONF_BILLING_PRICE_MODE, "dynamic")
         fixed_price = config.get(CONF_BILLING_FIXED_PRICE, DEFAULT_BILLING_FIXED_PRICE)
         daily_data["price_mode"] = price_mode
@@ -155,12 +163,56 @@ class DailyEnergyAggregator:
 
         if success:
             _LOGGER.info(
-                "Daily aggregation saved: Solar=%.2f kWh, Grid import=%.2f kWh",
+                "Daily aggregation saved: Solar=%.2f kWh, Grid import=%.2f kWh, Battery discharged=%.2f kWh",
                 solar_yield,
-                daily_data["grid_import_kwh"] or 0
+                daily_data["grid_import_kwh"] or 0,
+                daily_data.get("battery_to_house_kwh") or 0
             )
 
         return success
+
+    async def _merge_from_daily_stats(self, today_str: str, daily_data: dict[str, Any]) -> None:
+        """Merge data from energy_sources_daily_stats.json. @zara"""
+        daily_stats_file = self._data_path / "energy_sources_daily_stats.json"
+
+        if not daily_stats_file.exists():
+            return
+
+        try:
+            async with aiofiles.open(daily_stats_file, "r", encoding="utf-8") as f:
+                content = await f.read()
+                stats = json.loads(content)
+
+            today_stats = stats.get("days", {}).get(today_str, {})
+
+            # Add battery_to_house_kwh from power sources collector
+            if today_stats.get("battery_to_house_kwh") is not None:
+                daily_data["battery_to_house_kwh"] = today_stats["battery_to_house_kwh"]
+
+            # Add consumption_kwh if available
+            if today_stats.get("consumption_kwh") is not None:
+                daily_data["home_consumption_kwh"] = today_stats["consumption_kwh"]
+
+            # Add autarky and self-consumption percentages
+            if today_stats.get("autarky_percent") is not None:
+                daily_data["autarky_percent"] = today_stats["autarky_percent"]
+            if today_stats.get("self_consumption_percent") is not None:
+                daily_data["self_consumption_percent"] = today_stats["self_consumption_percent"]
+
+            # Add battery SOC statistics
+            if today_stats.get("avg_soc") is not None:
+                daily_data["avg_soc"] = today_stats["avg_soc"]
+            if today_stats.get("min_soc") is not None:
+                daily_data["min_soc"] = today_stats["min_soc"]
+            if today_stats.get("max_soc") is not None:
+                daily_data["max_soc"] = today_stats["max_soc"]
+
+            # Add peak battery power
+            if today_stats.get("peak_battery_power_w") is not None:
+                daily_data["peak_battery_power_w"] = today_stats["peak_battery_power_w"]
+
+        except Exception as err:
+            _LOGGER.warning("Error merging from daily stats: %s", err)
 
     async def async_get_billing_period_data(
         self,

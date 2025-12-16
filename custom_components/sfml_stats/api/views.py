@@ -102,6 +102,7 @@ async def async_setup_views(hass: HomeAssistant) -> None:
     hass.http.register_view(ExportWeatherAnalyticsView())
     hass.http.register_view(PowerSourcesHistoryView())
     hass.http.register_view(ExportPowerSourcesView())
+    hass.http.register_view(EnergySourcesDailyStatsView())
 
     _LOGGER.info("SFML Stats API views registered")
 
@@ -344,6 +345,11 @@ class SolarDataView(HomeAssistantView):
                 for k, v in astronomy["days"].items()
                 if k >= cutoff_str
             }
+
+        # Multi-day hourly forecast (Heute, Morgen, Übermorgen)
+        multi_day = await _read_json_file(SOLAR_PATH / "stats" / "multi_day_hourly_forecast.json")
+        if multi_day and "days" in multi_day:
+            result["data"]["multi_day_hourly"] = multi_day["days"]
 
         return web.json_response(result)
 
@@ -645,13 +651,24 @@ class EnergyFlowView(HomeAssistantView):
         """Return current energy flow data. @zara"""
         config = _get_config()
 
+        # Solar kann NIEMALS negativ sein - korrigiere negative Werte
+        solar_power = _get_sensor_value(config.get(CONF_SENSOR_SOLAR_POWER))
+        solar_to_house = _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_HOUSE))
+        solar_to_battery = _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_BATTERY))
+        if solar_power is not None and solar_power < 0:
+            solar_power = 0.0
+        if solar_to_house is not None and solar_to_house < 0:
+            solar_to_house = 0.0
+        if solar_to_battery is not None and solar_to_battery < 0:
+            solar_to_battery = 0.0
+
         result = {
             "success": True,
             "timestamp": datetime.now().isoformat(),
             "flows": {
-                "solar_power": _get_sensor_value(config.get(CONF_SENSOR_SOLAR_POWER)),
-                "solar_to_house": _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_HOUSE)),
-                "solar_to_battery": _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_BATTERY)),
+                "solar_power": solar_power,
+                "solar_to_house": solar_to_house,
+                "solar_to_battery": solar_to_battery,
                 "battery_to_house": _get_sensor_value(config.get(CONF_SENSOR_BATTERY_TO_HOUSE)),
                 "grid_to_house": _get_sensor_value(config.get(CONF_SENSOR_GRID_TO_HOUSE)),
                 "grid_to_battery": _get_sensor_value(config.get(CONF_SENSOR_GRID_TO_BATTERY)),
@@ -1274,7 +1291,9 @@ class PowerSourcesHistoryView(HomeAssistantView):
 
             # Get configured sensor entity IDs
             sensors = {
+                "solar_power": config.get(CONF_SENSOR_SOLAR_POWER),
                 "solar_to_house": config.get(CONF_SENSOR_SOLAR_TO_HOUSE),
+                "solar_to_battery": config.get(CONF_SENSOR_SOLAR_TO_BATTERY),
                 "battery_to_house": config.get(CONF_SENSOR_BATTERY_TO_HOUSE),
                 "grid_to_house": config.get(CONF_SENSOR_GRID_TO_HOUSE),
                 "home_consumption": config.get(CONF_SENSOR_HOME_CONSUMPTION),
@@ -1303,7 +1322,7 @@ class PowerSourcesHistoryView(HomeAssistantView):
 
             # Check if we got any actual data
             has_data = any(
-                any(d.get(k) is not None for k in ['solar_to_house', 'battery_to_house', 'grid_to_house', 'home_consumption'])
+                any(d.get(k) is not None for k in ['solar_power', 'solar_to_house', 'solar_to_battery', 'battery_to_house', 'grid_to_house', 'home_consumption'])
                 for d in processed_data
             )
 
@@ -1495,7 +1514,9 @@ class PowerSourcesHistoryView(HomeAssistantView):
         while current_time <= end_time:
             buckets.append({
                 "timestamp": current_time.isoformat(),
+                "solar_power": None,
                 "solar_to_house": None,
+                "solar_to_battery": None,
                 "battery_to_house": None,
                 "grid_to_house": None,
                 "home_consumption": None,
@@ -1558,7 +1579,12 @@ class ExportPowerSourcesView(HomeAssistantView):
             stats = data.get("stats", {})
             history = data.get("data", [])
 
-            _LOGGER.info("Generating power sources export: period=%s, data_points=%d", period, len(history))
+            # Convert reactive proxy to plain dict if needed
+            if hasattr(stats, '__dict__'):
+                stats = dict(stats)
+
+            _LOGGER.info("Generating power sources export: period=%s, data_points=%d, stats_keys=%s",
+                         period, len(history), list(stats.keys()) if stats else [])
 
             from ..charts.power_sources import PowerSourcesChart
 
@@ -1579,7 +1605,121 @@ class ExportPowerSourcesView(HomeAssistantView):
             )
 
         except Exception as err:
-            _LOGGER.error("Error generating power sources export: %s", err, exc_info=True)
+            import traceback
+            _LOGGER.error("Error generating power sources export: %s\n%s", err, traceback.format_exc())
+            return web.json_response({
+                "success": False,
+                "error": str(err)
+            }, status=500)
+
+
+class EnergySourcesDailyStatsView(HomeAssistantView):
+    """API for daily energy sources statistics. @zara"""
+
+    url = "/api/sfml_stats/energy_sources_daily_stats"
+    name = "api:sfml_stats:energy_sources_daily_stats"
+    requires_auth = False
+
+    async def get(self, request: web.Request) -> web.Response:
+        """Get daily energy sources statistics. @zara"""
+        try:
+            days = int(request.query.get("days", 7))
+            days = min(days, 365)  # Max 1 year
+
+            # Get power sources collector from hass.data
+            if HASS is None:
+                return web.json_response({
+                    "success": False,
+                    "error": "Home Assistant not initialized"
+                })
+
+            # Try to get collector from entry data
+            collector = None
+            entries = HASS.data.get(DOMAIN, {})
+            for entry_id, entry_data in entries.items():
+                if isinstance(entry_data, dict) and "power_sources_collector" in entry_data:
+                    collector = entry_data["power_sources_collector"]
+                    break
+
+            if collector is None:
+                # Fallback: read directly from file
+                data_path = Path(HASS.config.path()) / "sfml_stats" / "data" / "energy_sources_daily_stats.json"
+                if data_path.exists():
+                    import aiofiles
+                    async with aiofiles.open(data_path, 'r') as f:
+                        content = await f.read()
+                        daily_stats = json.loads(content)
+                else:
+                    daily_stats = {"days": {}}
+            else:
+                daily_stats = await collector.get_daily_stats(days)
+
+            # Merge with daily_energy_history.json for more complete data
+            history_path = Path(HASS.config.path()) / "sfml_stats" / "data" / "daily_energy_history.json"
+            if history_path.exists():
+                import aiofiles
+                async with aiofiles.open(history_path, 'r') as f:
+                    content = await f.read()
+                    history_data = json.loads(content)
+                    history_days = history_data.get("days", {})
+
+                    # Merge history data into daily_stats (add missing days)
+                    for date_str, day_data in history_days.items():
+                        if date_str not in daily_stats.get("days", {}):
+                            # Convert history format to daily_stats format
+                            daily_stats.setdefault("days", {})[date_str] = {
+                                "date": date_str,
+                                "solar_to_house_kwh": day_data.get("solar_to_house_kwh", 0),
+                                "solar_to_battery_kwh": day_data.get("battery_charge_solar_kwh", 0),
+                                "battery_to_house_kwh": day_data.get("battery_to_house_kwh", 0),
+                                "battery_charge_grid_kwh": day_data.get("battery_charge_grid_kwh", 0),
+                                "grid_to_house_kwh": day_data.get("grid_import_kwh", 0),
+                                "grid_export_kwh": day_data.get("grid_export_kwh", 0),
+                                "home_consumption_kwh": day_data.get("home_consumption_kwh", 0),
+                                "solar_yield_kwh": day_data.get("solar_yield_kwh", 0),
+                                "price_ct_kwh": day_data.get("price_ct_kwh", 0),
+                                "autarky_percent": day_data.get("autarky_percent", 0),
+                                "self_consumption_percent": day_data.get("self_consumption_percent", 0),
+                                "avg_soc": day_data.get("avg_soc", 0),
+                                "min_soc": day_data.get("min_soc", 0),
+                                "max_soc": day_data.get("max_soc", 0),
+                                "peak_battery_power_w": day_data.get("peak_battery_power_w", 0),
+                                "peak_consumption_w": 0,
+                            }
+                        else:
+                            # Merge additional fields from history into existing day data
+                            existing = daily_stats["days"][date_str]
+                            if existing.get("peak_battery_power_w") is None or existing.get("peak_battery_power_w") == 0:
+                                existing["peak_battery_power_w"] = day_data.get("peak_battery_power_w", 0)
+
+            # Also get current sensor values for real-time display
+            config = _get_config()
+            # Solar kann NIEMALS negativ sein
+            solar_to_house_val = _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_HOUSE))
+            solar_to_battery_val = _get_sensor_value(config.get(CONF_SENSOR_SOLAR_TO_BATTERY))
+            if solar_to_house_val is not None and solar_to_house_val < 0:
+                solar_to_house_val = 0.0
+            if solar_to_battery_val is not None and solar_to_battery_val < 0:
+                solar_to_battery_val = 0.0
+            current_values = {
+                "solar_yield_daily": _get_sensor_value(config.get(CONF_SENSOR_SOLAR_YIELD_DAILY)),
+                "solar_to_house": solar_to_house_val,
+                "solar_to_battery": solar_to_battery_val,
+                "battery_to_house": _get_sensor_value(config.get(CONF_SENSOR_BATTERY_TO_HOUSE)),
+                "grid_to_house": _get_sensor_value(config.get(CONF_SENSOR_GRID_TO_HOUSE)),
+                "home_consumption": _get_sensor_value(config.get(CONF_SENSOR_HOME_CONSUMPTION)),
+            }
+
+            return web.json_response({
+                "success": True,
+                "timestamp": datetime.now().isoformat(),
+                "days_requested": days,
+                "daily_stats": daily_stats.get("days", {}),
+                "current_values": current_values,
+            })
+
+        except Exception as err:
+            _LOGGER.error("Error fetching energy sources daily stats: %s", err, exc_info=True)
             return web.json_response({
                 "success": False,
                 "error": str(err)

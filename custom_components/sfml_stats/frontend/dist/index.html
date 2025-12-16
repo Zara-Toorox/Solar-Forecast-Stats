@@ -1771,6 +1771,29 @@
                         {{ currentPrice.total_price?.toFixed(2) || '—' }} ct/kWh
                     </text>
                 </svg>
+            </section>
+
+            <!-- Solar Power Live Card - Header klickbar für Modal -->
+            <section class="power-sources-card">
+                <div class="power-sources-header" @click="openPowerSourcesModal" style="cursor: pointer;">
+                    <div class="power-sources-title">
+                        <span>☀️</span>
+                        <span>Solar Live</span>
+                        <span v-if="energyFlow.flows.solar_power !== null" style="margin-left: 12px; font-size: 1.3rem; color: #FFB74D;">{{ Math.round(energyFlow.flows.solar_power || 0) }} W</span>
+                        <span v-if="stats.peaks.today?.power_w" style="margin-left: 16px; font-size: 0.85rem; color: #94a3b8;">
+                            Peak: <span style="color: #4ade80;">{{ Math.round(stats.peaks.today.power_w) }} W</span>
+                            <span v-if="stats.peaks.today?.at" style="color: #64748b;"> ({{ formatTime(stats.peaks.today.at) }})</span>
+                        </span>
+                    </div>
+                    <div class="power-sources-subtitle">Klicken für Energiequellen Analytics • Live-Daten</div>
+                </div>
+                <div class="power-sources-chart-container" ref="powerSourcesPreviewChart"></div>
+                <div class="power-sources-legend">
+                    <div class="power-sources-legend-item">
+                        <div class="power-sources-legend-dot solar"></div>
+                        <span>PV-Leistung</span>
+                    </div>
+                </div>
 
                 <!-- Panel Grid - Individuelle PV-Panels -->
                 <div class="panel-grid" v-if="energyFlow.panels && energyFlow.panels.length > 0">
@@ -1789,36 +1812,6 @@
                             <span class="panel-card-name">{{ panel.name }}</span>
                         </div>
                         <div class="panel-card-power">{{ panel.power?.toFixed(0) || '0' }} <span class="panel-card-unit">W</span></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Power Sources Card - Header klickbar für Modal -->
-            <section class="power-sources-card">
-                <div class="power-sources-header" @click="openPowerSourcesModal" style="cursor: pointer;">
-                    <div class="power-sources-title">
-                        <span>⚡</span>
-                        <span>Energiequellen</span>
-                    </div>
-                    <div class="power-sources-subtitle">Klicken für Details • Live-Daten</div>
-                </div>
-                <div class="power-sources-chart-container" ref="powerSourcesPreviewChart"></div>
-                <div class="power-sources-legend">
-                    <div class="power-sources-legend-item">
-                        <div class="power-sources-legend-dot solar"></div>
-                        <span>Solar</span>
-                    </div>
-                    <div class="power-sources-legend-item">
-                        <div class="power-sources-legend-dot battery"></div>
-                        <span>Batterie</span>
-                    </div>
-                    <div class="power-sources-legend-item">
-                        <div class="power-sources-legend-dot grid"></div>
-                        <span>Netz</span>
-                    </div>
-                    <div class="power-sources-legend-item">
-                        <div class="power-sources-legend-dot consumption"></div>
-                        <span>Verbrauch</span>
                     </div>
                 </div>
             </section>
@@ -1890,12 +1883,11 @@
 
             <!-- Tagesproduktion Chart (direkt unter Energiefluss) -->
             <section class="chart-card" style="margin-bottom: var(--spacing-lg);">
-                <div class="chart-header">
+                <div class="chart-header" @click="openProductionTodayModal" style="cursor: pointer;">
                     <div class="chart-title">📅 Produktion Heute (Echtzeit)</div>
                     <div class="chart-stats">
                         <span class="chart-stat" style="color: #00ff88;">Ertrag: {{ energyFlow.statistics.solar_yield_daily?.toFixed(2) || '—' }} kWh</span>
                         <span class="chart-stat" style="color: #8b5cf6;">Prognose: {{ forecast.todayTotal?.toFixed(2) || '—' }} kWh</span>
-                        <span class="chart-stat" style="color: #ff6b6b;" v-if="forecast.todayTotalCorrected">Korrektur: {{ forecast.todayTotalCorrected?.toFixed(2) }} kWh</span>
                         <span class="chart-stat" :style="{color: todayAccuracy >= 80 ? '#00ff88' : todayAccuracy >= 50 ? '#ffdd00' : '#ef4444'}">
                             Genauigkeit: {{ todayAccuracy?.toFixed(0) || '—' }}%
                         </span>
@@ -1908,7 +1900,7 @@
             <section class="top-row" style="margin-bottom: var(--spacing-lg);" v-if="panelGroups.available">
                 <template v-for="(group, groupName) in panelGroups.groups" :key="groupName">
                     <div class="chart-card" style="flex: 1; min-width: 300px;">
-                        <div class="chart-header">
+                        <div class="chart-header" @click="openPanelGroupModal(groupName)" style="cursor: pointer;">
                             <div class="chart-title">☀️ {{ groupName }}</div>
                             <div class="chart-stats">
                                 <span class="chart-stat" style="color: #00ff88;">IST: {{ group.actual_total_kwh?.toFixed(3) || '0.000' }} kWh</span>
@@ -2539,11 +2531,11 @@
                     <div class="modal-stats-grid">
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ batteryModal.stats.weekCharged?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Geladen (Woche)</div>
+                            <div class="modal-stat-label">Geladen (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ batteryModal.stats.weekDischarged?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Entladen (Woche)</div>
+                            <div class="modal-stat-label">Entladen (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ batteryModal.stats.avgSOC?.toFixed(0) || '—' }}%</div>
@@ -2639,7 +2631,7 @@
                     <div class="modal-stats-grid">
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ houseModal.stats.weekConsumption?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Verbrauch (Woche)</div>
+                            <div class="modal-stat-label">Verbrauch (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ houseModal.stats.avgDaily?.toFixed(2) || '—' }} kWh</div>
@@ -2739,11 +2731,11 @@
                     <div class="modal-stats-grid">
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ gridModal.stats.weekImport?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Bezug (Woche)</div>
+                            <div class="modal-stat-label">Bezug (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ gridModal.stats.weekExport?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Einspeisung (Woche)</div>
+                            <div class="modal-stat-label">Einspeisung (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ gridModal.stats.netBalance?.toFixed(2) || '—' }} kWh</div>
@@ -2755,11 +2747,11 @@
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ gridModal.stats.costs?.toFixed(2) || '—' }} €</div>
-                            <div class="modal-stat-label">Kosten (Monat)</div>
+                            <div class="modal-stat-label">Kosten (Mo-So)</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ gridModal.stats.revenue?.toFixed(2) || '—' }} €</div>
-                            <div class="modal-stat-label">Erlöse (Monat)</div>
+                            <div class="modal-stat-label">Erlöse (Mo-So)</div>
                         </div>
                     </div>
 
@@ -2835,31 +2827,35 @@
                     </div>
                 </div>
                 <div class="modal-body">
-                    <!-- Quick Stats -->
-                    <div class="modal-stats-grid">
+                    <!-- Quick Stats - 7 Cards -->
+                    <div class="modal-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
                         <div class="modal-stat-card">
-                            <div class="modal-stat-value" style="color: #FFB74D;">{{ powerSourcesModal.stats.solarTotal?.toFixed(2) || '—' }} kWh</div>
+                            <div class="modal-stat-value" style="color: #FFD700;">{{ powerSourcesModal.stats.solarTotal?.toFixed(2) || '—' }} kWh</div>
                             <div class="modal-stat-label">Solar gesamt</div>
                         </div>
                         <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #FFB74D;">{{ powerSourcesModal.stats.solarToHouse?.toFixed(2) || '—' }} kWh</div>
+                            <div class="modal-stat-label">Solar → Haus</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #9ACD32;">{{ powerSourcesModal.stats.solarToBattery?.toFixed(2) || '—' }} kWh</div>
+                            <div class="modal-stat-label">Solar → Batterie</div>
+                        </div>
+                        <div class="modal-stat-card">
                             <div class="modal-stat-value" style="color: #4DD0E1;">{{ powerSourcesModal.stats.batteryTotal?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Batterie gesamt</div>
+                            <div class="modal-stat-label">Batterie → Haus</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value" style="color: #90CAF9;">{{ powerSourcesModal.stats.gridTotal?.toFixed(2) || '—' }} kWh</div>
-                            <div class="modal-stat-label">Netzbezug gesamt</div>
+                            <div class="modal-stat-label">Netz → Haus</div>
                         </div>
                         <div class="modal-stat-card">
-                            <div class="modal-stat-value">{{ powerSourcesModal.stats.consumptionTotal?.toFixed(2) || '—' }} kWh</div>
+                            <div class="modal-stat-value" style="color: #FF8C00;">{{ powerSourcesModal.stats.consumptionTotal?.toFixed(2) || '—' }} kWh</div>
                             <div class="modal-stat-label">Verbrauch gesamt</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value" style="color: var(--neon-green);">{{ powerSourcesModal.stats.autarky?.toFixed(1) || '—' }}%</div>
                             <div class="modal-stat-label">Autarkie</div>
-                        </div>
-                        <div class="modal-stat-card">
-                            <div class="modal-stat-value" style="color: var(--neon-yellow);">{{ powerSourcesModal.stats.selfConsumption?.toFixed(1) || '—' }}%</div>
-                            <div class="modal-stat-label">Eigenverbrauch</div>
                         </div>
                     </div>
 
@@ -2924,6 +2920,171 @@
                                 <span>Energieverteilung</span>
                             </div>
                             <div id="power-sources-pie-chart" style="height: 250px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PANEL GROUP MODAL ===== -->
+        <div v-if="panelGroupModal.isOpen" class="modal-overlay" @click.self="closePanelGroupModal">
+            <div class="modal-container" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">
+                        <span>☀️</span>
+                        <span>{{ panelGroupModal.groupName }} - Details</span>
+                    </h2>
+                    <button class="modal-close" @click="closePanelGroupModal">×</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Quick Stats -->
+                    <div class="modal-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px;">
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #00ff88;">{{ panelGroupModal.groupData?.actual_total_kwh?.toFixed(3) || '0.000' }} kWh</div>
+                            <div class="modal-stat-label">IST Gesamt</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #8b5cf6;">{{ panelGroupModal.groupData?.prediction_total_kwh?.toFixed(3) || '0.000' }} kWh</div>
+                            <div class="modal-stat-label">Prognose Gesamt</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" :style="{color: (panelGroupModal.groupData?.accuracy_percent || 0) >= 80 ? '#00ff88' : (panelGroupModal.groupData?.accuracy_percent || 0) >= 50 ? '#ffdd00' : '#ef4444'}">
+                                {{ panelGroupModal.groupData?.accuracy_percent?.toFixed(1) || '—' }}%
+                            </div>
+                            <div class="modal-stat-label">Genauigkeit</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" :style="{color: getPanelGroupDeviation() >= 0 ? '#00ff88' : '#ef4444'}">
+                                {{ getPanelGroupDeviation() >= 0 ? '+' : '' }}{{ getPanelGroupDeviation()?.toFixed(1) || '0.0' }}%
+                            </div>
+                            <div class="modal-stat-label">Abweichung</div>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Data Table -->
+                    <div class="modal-chart-container">
+                        <div class="modal-chart-title">
+                            <span>📊</span>
+                            <span>Stündliche Übersicht</span>
+                        </div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead style="position: sticky; top: 0; background: #1e1e3e;">
+                                    <tr style="border-bottom: 2px solid #404040;">
+                                        <th style="padding: 10px; text-align: left; color: #94a3b8;">Stunde</th>
+                                        <th style="padding: 10px; text-align: right; color: #00ff88;">IST (kWh)</th>
+                                        <th style="padding: 10px; text-align: right; color: #8b5cf6;">Prognose (kWh)</th>
+                                        <th style="padding: 10px; text-align: right; color: #94a3b8;">Abweichung</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="hour in getPanelGroupHourlyData()" :key="hour.hour"
+                                        style="border-bottom: 1px solid #2a2a4a;"
+                                        :style="{ background: hour.hour === new Date().getHours() ? 'rgba(255, 221, 0, 0.1)' : 'transparent' }">
+                                        <td style="padding: 8px 10px; color: #e2e8f0;">
+                                            {{ hour.hour }}:00
+                                            <span v-if="hour.hour === new Date().getHours()" style="color: #ffdd00; font-size: 0.8rem;"> (aktuell)</span>
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #00ff88; font-family: monospace;">
+                                            {{ hour.actual?.toFixed(4) || '0.0000' }}
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #8b5cf6; font-family: monospace;">
+                                            {{ hour.prediction?.toFixed(4) || '0.0000' }}
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; font-family: monospace;"
+                                            :style="{ color: hour.deviation >= 0 ? '#00ff88' : '#ef4444' }">
+                                            {{ hour.deviation >= 0 ? '+' : '' }}{{ hour.deviation?.toFixed(1) || '0.0' }}%
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PRODUCTION TODAY MODAL ===== -->
+        <div v-if="productionTodayModal.isOpen" class="modal-overlay" @click.self="closeProductionTodayModal">
+            <div class="modal-container" style="max-width: 900px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">
+                        <span>📅</span>
+                        <span>Produktion Heute - Details</span>
+                    </h2>
+                    <button class="modal-close" @click="closeProductionTodayModal">×</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Quick Stats -->
+                    <div class="modal-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px;">
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #00ff88;">{{ energyFlow.statistics.solar_yield_daily?.toFixed(2) || '0.00' }} kWh</div>
+                            <div class="modal-stat-label">Ertrag Heute</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #8b5cf6;">{{ forecast.todayTotal?.toFixed(2) || '0.00' }} kWh</div>
+                            <div class="modal-stat-label">Prognose Heute</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" :style="{color: (todayAccuracy || 0) >= 80 ? '#00ff88' : (todayAccuracy || 0) >= 50 ? '#ffdd00' : '#ef4444'}">
+                                {{ todayAccuracy?.toFixed(1) || '—' }}%
+                            </div>
+                            <div class="modal-stat-label">Genauigkeit</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" :style="{color: getProductionTodayDeviation() >= 0 ? '#00ff88' : '#ef4444'}">
+                                {{ getProductionTodayDeviation() >= 0 ? '+' : '' }}{{ getProductionTodayDeviation()?.toFixed(1) || '0.0' }}%
+                            </div>
+                            <div class="modal-stat-label">Abweichung</div>
+                        </div>
+                        <div class="modal-stat-card">
+                            <div class="modal-stat-value" style="color: #ffdd00;">{{ forecast.todayRemaining?.toFixed(2) || '0.00' }} kWh</div>
+                            <div class="modal-stat-label">Verbleibend</div>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Data Table -->
+                    <div class="modal-chart-container">
+                        <div class="modal-chart-title">
+                            <span>📊</span>
+                            <span>Stündliche Übersicht</span>
+                        </div>
+                        <div style="max-height: 450px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead style="position: sticky; top: 0; background: #1e1e3e;">
+                                    <tr style="border-bottom: 2px solid #404040;">
+                                        <th style="padding: 10px; text-align: left; color: #94a3b8;">Stunde</th>
+                                        <th style="padding: 10px; text-align: right; color: #00ff88;">IST (kWh)</th>
+                                        <th style="padding: 10px; text-align: right; color: #8b5cf6;">Prognose (kWh)</th>
+                                        <th style="padding: 10px; text-align: right; color: #94a3b8;">Abweichung</th>
+                                        <th style="padding: 10px; text-align: right; color: #94a3b8;">Genauigkeit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="hour in getProductionTodayHourlyData()" :key="hour.hour"
+                                        style="border-bottom: 1px solid #2a2a4a;"
+                                        :style="{ background: hour.hour === new Date().getHours() ? 'rgba(255, 221, 0, 0.1)' : 'transparent' }">
+                                        <td style="padding: 8px 10px; color: #e2e8f0;">
+                                            {{ hour.hour }}:00
+                                            <span v-if="hour.hour === new Date().getHours()" style="color: #ffdd00; font-size: 0.8rem;"> (aktuell)</span>
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #00ff88; font-family: monospace;">
+                                            {{ hour.actual?.toFixed(3) || '0.000' }}
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #8b5cf6; font-family: monospace;">
+                                            {{ hour.prediction?.toFixed(3) || '0.000' }}
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; font-family: monospace;"
+                                            :style="{ color: hour.deviation >= 0 ? '#00ff88' : '#ef4444' }">
+                                            {{ hour.deviation >= 0 ? '+' : '' }}{{ hour.deviation?.toFixed(1) || '0.0' }}%
+                                        </td>
+                                        <td style="padding: 8px 10px; text-align: right; font-family: monospace;"
+                                            :style="{ color: hour.accuracy >= 80 ? '#00ff88' : hour.accuracy >= 50 ? '#ffdd00' : '#ef4444' }">
+                                            {{ hour.accuracy?.toFixed(0) || '—' }}%
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -3149,6 +3310,19 @@
                     groups: {}
                 });
 
+                // Panel Group Modal
+                const panelGroupModal = reactive({
+                    isOpen: false,
+                    groupName: '',
+                    groupData: null
+                });
+
+                // Production Today Modal
+                const productionTodayModal = reactive({
+                    isOpen: false,
+                    hourlyData: []
+                });
+
                 // History Stats für erweiterte Charts
                 const historyStats = reactive({
                     avgProduction: null,
@@ -3306,6 +3480,8 @@
                     exporting: false,
                     stats: {
                         solarTotal: 0,
+                        solarToHouse: 0,
+                        solarToBattery: 0,
                         batteryTotal: 0,
                         gridTotal: 0,
                         consumptionTotal: 0,
@@ -3565,38 +3741,72 @@
 
                 async function updateBatteryCharts() {
                     try {
-                        const response = await fetch('/api/sfml_stats/energy_flow');
-                        const result = await response.json();
-                        if (!result.success) return;
-
-                        // Generate mock historical data for demo
+                        // Fetch real daily stats from API
                         const days = batteryModal.activeTab === 'week' ? 7 : batteryModal.activeTab === 'month' ? 30 : 365;
-                        const history = [];
-                        const now = new Date();
+                        const response = await fetch(`/api/sfml_stats/energy_sources_daily_stats?days=${days}`);
+                        const result = await response.json();
 
-                        for (let i = days - 1; i >= 0; i--) {
-                            const date = new Date(now);
-                            date.setDate(date.getDate() - i);
-                            history.push({
-                                date: date.toISOString().slice(0, 10),
-                                soc: 50 + Math.random() * 40, // 50-90%
-                                charged_kwh: Math.random() * 8, // 0-8 kWh
-                                discharged_kwh: Math.random() * 6, // 0-6 kWh
-                                efficiency: 85 + Math.random() * 10, // 85-95%
-                                peak_power_w: 2000 + Math.random() * 3000 // 2000-5000W
-                            });
+                        const history = [];
+
+                        if (result.success && result.daily_stats) {
+                            // Convert daily_stats object to array sorted by date
+                            const dailyStats = result.daily_stats;
+                            const sortedDates = Object.keys(dailyStats).sort();
+
+                            for (const dateStr of sortedDates) {
+                                const dayData = dailyStats[dateStr];
+                                // Charged = solar_to_battery + grid charging (from history)
+                                const chargedFromSolar = dayData.solar_to_battery_kwh || 0;
+                                const chargedFromGrid = dayData.battery_charge_grid_kwh || 0;
+                                const chargedKwh = chargedFromSolar + chargedFromGrid;
+                                // Discharged = battery_to_house
+                                const dischargedKwh = dayData.battery_to_house_kwh || 0;
+                                // Efficiency = discharged / charged (if both > 0)
+                                const efficiency = chargedKwh > 0 ? (dischargedKwh / chargedKwh) * 100 : 0;
+
+                                history.push({
+                                    date: dateStr,
+                                    soc: dayData.avg_soc || 0, // Not available yet
+                                    charged_kwh: chargedKwh,
+                                    discharged_kwh: dischargedKwh,
+                                    efficiency: Math.min(100, efficiency),
+                                    peak_power_w: dayData.peak_battery_power_w || 0
+                                });
+                            }
+                        }
+
+                        // Fallback if no data
+                        if (history.length === 0) {
+                            console.warn('No battery stats available, showing empty data');
                         }
 
                         batteryModal.historicalData = history;
 
-                        // Calculate stats
-                        const weekData = history.slice(-7);
+                        // Calculate stats - week is Monday-Sunday of current week
+                        const now = new Date();
+                        const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ...
+                        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() + mondayOffset);
+                        monday.setHours(0, 0, 0, 0);
+                        const sundayEnd = new Date(monday);
+                        sundayEnd.setDate(monday.getDate() + 6);
+                        sundayEnd.setHours(23, 59, 59, 999);
+
+                        const mondayStr = monday.toISOString().slice(0, 10);
+                        const sundayStr = sundayEnd.toISOString().slice(0, 10);
+
+                        // Filter data for current week (Monday-Sunday)
+                        const weekData = history.filter(d => d.date >= mondayStr && d.date <= sundayStr);
+
                         batteryModal.stats.weekCharged = weekData.reduce((sum, d) => sum + d.charged_kwh, 0);
                         batteryModal.stats.weekDischarged = weekData.reduce((sum, d) => sum + d.discharged_kwh, 0);
-                        batteryModal.stats.avgSOC = history.reduce((sum, d) => sum + d.soc, 0) / history.length;
-                        batteryModal.stats.efficiency = history.reduce((sum, d) => sum + d.efficiency, 0) / history.length;
-                        batteryModal.stats.cycles = weekData.reduce((sum, d) => sum + d.discharged_kwh, 0) / 10; // Assume 10kWh capacity
-                        batteryModal.stats.peakPower = Math.max(...history.map(d => d.peak_power_w));
+                        batteryModal.stats.avgSOC = history.length > 0 ? history.reduce((sum, d) => sum + d.soc, 0) / history.length : 0;
+                        const totalCharged = history.reduce((sum, d) => sum + d.charged_kwh, 0);
+                        const totalDischarged = history.reduce((sum, d) => sum + d.discharged_kwh, 0);
+                        batteryModal.stats.efficiency = totalCharged > 0 ? (totalDischarged / totalCharged) * 100 : 0;
+                        batteryModal.stats.cycles = batteryModal.stats.weekDischarged / 10; // Assume 10kWh capacity
+                        batteryModal.stats.peakPower = history.length > 0 ? Math.max(...history.map(d => d.peak_power_w)) : 0;
 
                         renderBatteryCharts();
                     } catch (error) {
@@ -3662,7 +3872,7 @@
                         });
                     }
 
-                    // Power Chart
+                    // Power Chart - Peak Battery Power per day
                     if (batteryPowerChart.value) {
                         batteryPowerChart.value.setOption({
                             tooltip: { trigger: 'axis', backgroundColor: 'rgba(30, 30, 62, 0.95)', borderColor: '#22c55e', textStyle: { color: '#fff' } },
@@ -3671,7 +3881,7 @@
                             series: [{
                                 name: 'Peak Leistung',
                                 type: 'bar',
-                                data: data.map(d => d.peak_power_w),
+                                data: data.map(d => d.peak_battery_power_w || 0),
                                 itemStyle: { color: '#22c55e' }
                             }],
                             grid: { left: 60, right: 30, top: 40, bottom: 50 }
@@ -3749,45 +3959,74 @@
 
                 async function updateHouseCharts() {
                     try {
-                        const response = await fetch('/api/sfml_stats/energy_flow');
-                        const result = await response.json();
-                        if (!result.success) return;
-
-                        // Generate mock historical data
+                        // Fetch real daily stats from API
                         const days = houseModal.activeTab === 'week' ? 7 : houseModal.activeTab === 'month' ? 30 : 365;
+                        const response = await fetch(`/api/sfml_stats/energy_sources_daily_stats?days=${days}`);
+                        const result = await response.json();
+
                         const history = [];
-                        const now = new Date();
 
-                        for (let i = days - 1; i >= 0; i--) {
-                            const date = new Date(now);
-                            date.setDate(date.getDate() - i);
-                            const totalConsumption = 15 + Math.random() * 10; // 15-25 kWh
-                            const solarKwh = 5 + Math.random() * 8; // 5-13 kWh
-                            const batteryKwh = 2 + Math.random() * 4; // 2-6 kWh
-                            const gridKwh = Math.max(0, totalConsumption - solarKwh - batteryKwh);
+                        if (result.success && result.daily_stats) {
+                            // Convert daily_stats object to array sorted by date
+                            const dailyStats = result.daily_stats;
+                            const sortedDates = Object.keys(dailyStats).sort();
 
-                            history.push({
-                                date: date.toISOString().slice(0, 10),
-                                consumption_kwh: totalConsumption,
-                                solar_kwh: solarKwh,
-                                battery_kwh: batteryKwh,
-                                grid_kwh: gridKwh,
-                                autarky: ((solarKwh + batteryKwh) / totalConsumption) * 100,
-                                self_consumption: (solarKwh / (solarKwh + 3)) * 100, // Mock
-                                peak_power_w: 3000 + Math.random() * 4000 // 3000-7000W
-                            });
+                            for (const dateStr of sortedDates) {
+                                const dayData = dailyStats[dateStr];
+                                const solarKwh = (dayData.solar_to_house_kwh || 0) + (dayData.solar_to_battery_kwh || 0);
+                                const batteryKwh = dayData.battery_to_house_kwh || 0;
+                                const gridKwh = dayData.grid_to_house_kwh || 0;
+                                const consumptionKwh = dayData.home_consumption_kwh || (solarKwh + batteryKwh + gridKwh);
+
+                                const autarky = consumptionKwh > 0 ? ((solarKwh + batteryKwh) / consumptionKwh) * 100 : 0;
+                                const totalSolar = (dayData.solar_yield_kwh || solarKwh);
+                                const selfConsumption = totalSolar > 0 ? (solarKwh / totalSolar) * 100 : 0;
+
+                                history.push({
+                                    date: dateStr,
+                                    consumption_kwh: consumptionKwh,
+                                    solar_kwh: solarKwh,
+                                    battery_kwh: batteryKwh,
+                                    grid_kwh: gridKwh,
+                                    autarky: Math.min(100, autarky),
+                                    self_consumption: Math.min(100, selfConsumption),
+                                    peak_power_w: dayData.peak_consumption_w || 0
+                                });
+                            }
+                        }
+
+                        // Fallback if no data
+                        if (history.length === 0) {
+                            console.warn('No daily stats available, showing empty data');
                         }
 
                         houseModal.historicalData = history;
 
-                        // Calculate stats
-                        const weekData = history.slice(-7);
+                        // Calculate stats - weekConsumption is Monday-Sunday of current week
+                        const now = new Date();
+                        const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ...
+                        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() + mondayOffset);
+                        monday.setHours(0, 0, 0, 0);
+                        const sundayEnd = new Date(monday);
+                        sundayEnd.setDate(monday.getDate() + 6);
+                        sundayEnd.setHours(23, 59, 59, 999);
+
+                        const mondayStr = monday.toISOString().slice(0, 10);
+                        const sundayStr = sundayEnd.toISOString().slice(0, 10);
+
+                        // Filter data for current week (Monday-Sunday)
+                        const weekData = history.filter(d => d.date >= mondayStr && d.date <= sundayStr);
+
                         houseModal.stats.weekConsumption = weekData.reduce((sum, d) => sum + d.consumption_kwh, 0);
-                        houseModal.stats.avgDaily = history.reduce((sum, d) => sum + d.consumption_kwh, 0) / history.length;
-                        houseModal.stats.autarky = history.reduce((sum, d) => sum + d.autarky, 0) / history.length;
-                        houseModal.stats.selfConsumption = history.reduce((sum, d) => sum + d.self_consumption, 0) / history.length;
-                        houseModal.stats.solarCoverage = (history.reduce((sum, d) => sum + d.solar_kwh, 0) / history.reduce((sum, d) => sum + d.consumption_kwh, 0)) * 100;
-                        houseModal.stats.peakPower = Math.max(...history.map(d => d.peak_power_w));
+                        houseModal.stats.avgDaily = history.length > 0 ? history.reduce((sum, d) => sum + d.consumption_kwh, 0) / history.length : 0;
+                        houseModal.stats.autarky = history.length > 0 ? history.reduce((sum, d) => sum + d.autarky, 0) / history.length : 0;
+                        houseModal.stats.selfConsumption = history.length > 0 ? history.reduce((sum, d) => sum + d.self_consumption, 0) / history.length : 0;
+                        const totalSolar = history.reduce((sum, d) => sum + d.solar_kwh, 0);
+                        const totalConsumption = history.reduce((sum, d) => sum + d.consumption_kwh, 0);
+                        houseModal.stats.solarCoverage = totalConsumption > 0 ? (totalSolar / totalConsumption) * 100 : 0;
+                        houseModal.stats.peakPower = history.length > 0 ? Math.max(...history.map(d => d.peak_power_w)) : 0;
 
                         renderHouseCharts();
                     } catch (error) {
@@ -3944,43 +4183,66 @@
 
                 async function updateGridCharts() {
                     try {
-                        const response = await fetch('/api/sfml_stats/energy_flow');
-                        const result = await response.json();
-                        if (!result.success) return;
-
-                        // Generate mock historical data
+                        // Fetch real daily stats from API
                         const days = gridModal.activeTab === 'week' ? 7 : gridModal.activeTab === 'month' ? 30 : 365;
+                        const response = await fetch(`/api/sfml_stats/energy_sources_daily_stats?days=${days}`);
+                        const result = await response.json();
+
                         const history = [];
-                        const now = new Date();
 
-                        for (let i = days - 1; i >= 0; i--) {
-                            const date = new Date(now);
-                            date.setDate(date.getDate() - i);
-                            const importKwh = Math.random() * 8; // 0-8 kWh
-                            const exportKwh = Math.random() * 12; // 0-12 kWh
-                            const avgPrice = 25 + Math.random() * 15; // 25-40 ct/kWh
+                        if (result.success && result.daily_stats) {
+                            // Convert daily_stats object to array sorted by date
+                            const dailyStats = result.daily_stats;
+                            const sortedDates = Object.keys(dailyStats).sort();
 
-                            history.push({
-                                date: date.toISOString().slice(0, 10),
-                                import_kwh: importKwh,
-                                export_kwh: exportKwh,
-                                avg_price_ct: avgPrice,
-                                costs_eur: (importKwh * avgPrice) / 100,
-                                revenue_eur: (exportKwh * 8) / 100 // Assume 8ct feed-in tariff
-                            });
+                            for (const dateStr of sortedDates) {
+                                const dayData = dailyStats[dateStr];
+                                const importKwh = dayData.grid_to_house_kwh || 0;
+                                const exportKwh = Math.abs(dayData.grid_export_kwh || 0);
+                                const avgPrice = dayData.price_ct_kwh || dayData.avg_price_ct || 35; // Default 35 ct/kWh
+
+                                history.push({
+                                    date: dateStr,
+                                    import_kwh: importKwh,
+                                    export_kwh: exportKwh,
+                                    avg_price_ct: avgPrice,
+                                    costs_eur: (importKwh * avgPrice) / 100,
+                                    revenue_eur: (exportKwh * 8) / 100 // Assume 8ct feed-in tariff
+                                });
+                            }
+                        }
+
+                        // Fallback if no data
+                        if (history.length === 0) {
+                            console.warn('No grid stats available, showing empty data');
                         }
 
                         gridModal.historicalData = history;
 
-                        // Calculate stats
-                        const weekData = history.slice(-7);
+                        // Calculate stats - week is Monday-Sunday of current week
+                        const now = new Date();
+                        const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ...
+                        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() + mondayOffset);
+                        monday.setHours(0, 0, 0, 0);
+                        const sundayEnd = new Date(monday);
+                        sundayEnd.setDate(monday.getDate() + 6);
+                        sundayEnd.setHours(23, 59, 59, 999);
+
+                        const mondayStr = monday.toISOString().slice(0, 10);
+                        const sundayStr = sundayEnd.toISOString().slice(0, 10);
+
+                        // Filter data for current week (Monday-Sunday)
+                        const weekData = history.filter(d => d.date >= mondayStr && d.date <= sundayStr);
                         const monthData = history.slice(-30);
+
                         gridModal.stats.weekImport = weekData.reduce((sum, d) => sum + d.import_kwh, 0);
                         gridModal.stats.weekExport = weekData.reduce((sum, d) => sum + d.export_kwh, 0);
                         gridModal.stats.netBalance = gridModal.stats.weekImport - gridModal.stats.weekExport;
-                        gridModal.stats.avgPrice = history.reduce((sum, d) => sum + d.avg_price_ct, 0) / history.length;
-                        gridModal.stats.costs = monthData.reduce((sum, d) => sum + d.costs_eur, 0);
-                        gridModal.stats.revenue = monthData.reduce((sum, d) => sum + d.revenue_eur, 0);
+                        gridModal.stats.avgPrice = history.length > 0 ? history.reduce((sum, d) => sum + d.avg_price_ct, 0) / history.length : 0;
+                        gridModal.stats.costs = weekData.reduce((sum, d) => sum + d.costs_eur, 0);
+                        gridModal.stats.revenue = weekData.reduce((sum, d) => sum + d.revenue_eur, 0);
 
                         renderGridCharts();
                     } catch (error) {
@@ -4132,30 +4394,36 @@
                     // Formula: kWh = W * hours / 1000
                     // With 5-minute intervals: kWh = W * (5/60) / 1000 = W / 12000
                     const intervalHours = 5 / 60;  // 0.0833 hours per interval
-                    let solarSum = 0, batterySum = 0, gridSum = 0, consumptionSum = 0;
+                    let solarToHouseSum = 0, solarToBatterySum = 0, batterySum = 0, gridSum = 0, consumptionSum = 0;
 
                     data.forEach(d => {
-                        solarSum += (d.solar_to_house || 0);
+                        solarToHouseSum += (d.solar_to_house || 0);
+                        solarToBatterySum += (d.solar_to_battery || 0);
                         batterySum += (d.battery_to_house || 0);
                         gridSum += (d.grid_to_house || 0);
                         consumptionSum += (d.home_consumption || 0);
                     });
 
                     // Convert W to kWh: W * intervalHours / 1000
-                    powerSourcesModal.stats.solarTotal = (solarSum * intervalHours) / 1000;
+                    powerSourcesModal.stats.solarToHouse = (solarToHouseSum * intervalHours) / 1000;
+                    powerSourcesModal.stats.solarToBattery = (solarToBatterySum * intervalHours) / 1000;
+                    powerSourcesModal.stats.solarTotal = powerSourcesModal.stats.solarToHouse + powerSourcesModal.stats.solarToBattery;
                     powerSourcesModal.stats.batteryTotal = (batterySum * intervalHours) / 1000;
                     powerSourcesModal.stats.gridTotal = (gridSum * intervalHours) / 1000;
                     powerSourcesModal.stats.consumptionTotal = (consumptionSum * intervalHours) / 1000;
 
-                    // Calculate autarky and self-consumption
+                    // Calculate autarky: (Solar→Haus + Batterie→Haus) / Verbrauch
                     const totalConsumption = powerSourcesModal.stats.consumptionTotal;
-                    const selfProduced = powerSourcesModal.stats.solarTotal + powerSourcesModal.stats.batteryTotal;
+                    const selfProduced = powerSourcesModal.stats.solarToHouse + powerSourcesModal.stats.batteryTotal;
 
                     if (totalConsumption > 0) {
                         powerSourcesModal.stats.autarky = Math.min(100, (selfProduced / totalConsumption) * 100);
                     }
-                    if (selfProduced > 0) {
-                        powerSourcesModal.stats.selfConsumption = Math.min(100, (totalConsumption / (selfProduced + powerSourcesModal.stats.gridTotal)) * 100);
+
+                    // Self-consumption: Eigenverbrauch / Solar gesamt
+                    const totalSolar = powerSourcesModal.stats.solarTotal;
+                    if (totalSolar > 0) {
+                        powerSourcesModal.stats.selfConsumption = Math.min(100, ((powerSourcesModal.stats.solarToHouse + powerSourcesModal.stats.solarToBattery) / totalSolar) * 100);
                     }
                 }
 
@@ -4186,7 +4454,8 @@
                         const dt = new Date(d.timestamp);
                         return dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                     });
-                    const solar = data.map(d => (d.solar_to_house || 0) / 1000);
+                    const solarToHouse = data.map(d => (d.solar_to_house || 0) / 1000);
+                    const solarToBattery = data.map(d => (d.solar_to_battery || 0) / 1000);
                     const battery = data.map(d => (d.battery_to_house || 0) / 1000);
                     const grid = data.map(d => (d.grid_to_house || 0) / 1000);
                     const consumption = data.map(d => (d.home_consumption || 0) / 1000);
@@ -4211,7 +4480,7 @@
                                 }
                             },
                             legend: {
-                                data: ['Solar', 'Batterie', 'Netz', 'Verbrauch'],
+                                data: ['Solar → Haus', 'Solar → Batterie', 'Batterie → Haus', 'Netz → Haus', 'Verbrauch'],
                                 textStyle: { color: '#94a3b8' },
                                 top: 10
                             },
@@ -4240,17 +4509,26 @@
                             ],
                             series: [
                                 {
-                                    name: 'Solar',
+                                    name: 'Solar → Haus',
                                     type: 'line',
                                     stack: 'sources',
                                     areaStyle: { opacity: 0.8 },
-                                    data: solar,
+                                    data: solarToHouse,
                                     itemStyle: { color: '#FFB74D' },
                                     smooth: true,
                                     showSymbol: false
                                 },
                                 {
-                                    name: 'Batterie',
+                                    name: 'Solar → Batterie',
+                                    type: 'line',
+                                    areaStyle: { opacity: 0.6 },
+                                    data: solarToBattery,
+                                    itemStyle: { color: '#9ACD32' },
+                                    smooth: true,
+                                    showSymbol: false
+                                },
+                                {
+                                    name: 'Batterie → Haus',
                                     type: 'line',
                                     stack: 'sources',
                                     areaStyle: { opacity: 0.8 },
@@ -4260,7 +4538,7 @@
                                     showSymbol: false
                                 },
                                 {
-                                    name: 'Netz',
+                                    name: 'Netz → Haus',
                                     type: 'line',
                                     stack: 'sources',
                                     areaStyle: { opacity: 0.8 },
@@ -4354,9 +4632,9 @@
                                     formatter: '{b}\n{d}%'
                                 },
                                 data: [
-                                    { value: stats.solarTotal.toFixed(2), name: 'Solar', itemStyle: { color: '#FFB74D' } },
-                                    { value: stats.batteryTotal.toFixed(2), name: 'Batterie', itemStyle: { color: '#4DD0E1' } },
-                                    { value: stats.gridTotal.toFixed(2), name: 'Netz', itemStyle: { color: '#90CAF9' } }
+                                    { value: stats.solarToHouse.toFixed(2), name: 'Solar → Haus', itemStyle: { color: '#FFB74D' } },
+                                    { value: stats.batteryTotal.toFixed(2), name: 'Batterie → Haus', itemStyle: { color: '#4DD0E1' } },
+                                    { value: stats.gridTotal.toFixed(2), name: 'Netz → Haus', itemStyle: { color: '#90CAF9' } }
                                 ]
                             }]
                         });
@@ -4439,6 +4717,99 @@
                             updateWeatherCharts();
                         }, 200);
                     }, 300);
+                }
+
+                // ===== PANEL GROUP MODAL =====
+                function openPanelGroupModal(groupName) {
+                    const groupData = panelGroups.groups[groupName];
+                    if (!groupData) return;
+
+                    panelGroupModal.groupName = groupName;
+                    panelGroupModal.groupData = groupData;
+                    panelGroupModal.isOpen = true;
+                }
+
+                function closePanelGroupModal() {
+                    panelGroupModal.isOpen = false;
+                    panelGroupModal.groupName = '';
+                    panelGroupModal.groupData = null;
+                }
+
+                function getPanelGroupDeviation() {
+                    if (!panelGroupModal.groupData) return 0;
+                    const actual = panelGroupModal.groupData.actual_total_kwh || 0;
+                    const prediction = panelGroupModal.groupData.prediction_total_kwh || 0;
+                    if (prediction === 0) return 0;
+                    return ((actual - prediction) / prediction) * 100;
+                }
+
+                function getPanelGroupHourlyData() {
+                    if (!panelGroupModal.groupData || !panelGroupModal.groupData.hourly) return [];
+
+                    return panelGroupModal.groupData.hourly
+                        .sort((a, b) => a.hour - b.hour)
+                        .map(h => {
+                            const actual = h.actual_kwh || 0;
+                            const prediction = h.prediction_kwh || 0;
+                            let deviation = 0;
+                            if (prediction > 0) {
+                                deviation = ((actual - prediction) / prediction) * 100;
+                            }
+                            return {
+                                hour: h.hour,
+                                actual: actual,
+                                prediction: prediction,
+                                deviation: deviation
+                            };
+                        });
+                }
+
+                // ===== PRODUCTION TODAY MODAL =====
+                function openProductionTodayModal() {
+                    productionTodayModal.isOpen = true;
+                }
+
+                function closeProductionTodayModal() {
+                    productionTodayModal.isOpen = false;
+                }
+
+                function getProductionTodayDeviation() {
+                    const actual = energyFlow.statistics.solar_yield_daily || 0;
+                    const prediction = forecast.todayTotal || 0;
+                    if (prediction === 0) return 0;
+                    return ((actual - prediction) / prediction) * 100;
+                }
+
+                function getProductionTodayHourlyData() {
+                    // Hole die stündlichen Daten aus forecast.todayHours
+                    if (!forecast.todayHours || forecast.todayHours.length === 0) return [];
+
+                    const now = new Date();
+                    const todayStr = now.getFullYear() + '-' +
+                        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(now.getDate()).padStart(2, '0');
+
+                    // Hole IST-Werte aus den hourly forecasts (die haben actual_kwh)
+                    return forecast.todayHours
+                        .sort((a, b) => a.hour - b.hour)
+                        .map(h => {
+                            const actual = h.actual || 0;
+                            const prediction = h.kwh || 0;
+                            let deviation = 0;
+                            let accuracy = 0;
+                            if (prediction > 0) {
+                                deviation = ((actual - prediction) / prediction) * 100;
+                                const absDeviation = Math.abs(deviation);
+                                accuracy = Math.max(0, 100 - absDeviation);
+                            }
+                            return {
+                                hour: h.hour,
+                                actual: actual,
+                                prediction: prediction,
+                                deviation: deviation,
+                                accuracy: accuracy
+                            };
+                        });
                 }
 
                 function closeWeatherModal() {
@@ -5443,6 +5814,12 @@
 
                         // Energy Flow
                         if (energyFlowData.success) {
+                            // Solar kann NIEMALS negativ sein - korrigiere negative Werte
+                            if (energyFlowData.flows) {
+                                energyFlowData.flows.solar_to_house = Math.max(0, energyFlowData.flows.solar_to_house || 0);
+                                energyFlowData.flows.solar_to_battery = Math.max(0, energyFlowData.flows.solar_to_battery || 0);
+                                energyFlowData.flows.solar_power = Math.max(0, energyFlowData.flows.solar_power || 0);
+                            }
                             Object.assign(energyFlow.flows, energyFlowData.flows);
                             Object.assign(energyFlow.battery, energyFlowData.battery);
                             Object.assign(energyFlow.home, energyFlowData.home);
@@ -5580,7 +5957,7 @@
                             }
 
                             const todayPreds = hourly.filter(h => h.target_date === todayStr && h.target_hour >= 6 && h.target_hour <= 20);
-                            forecast.todayHours = todayPreds.map(h => ({ hour: h.target_hour, kwh: h.prediction_kwh || 0 }));
+                            forecast.todayHours = todayPreds.map(h => ({ hour: h.target_hour, kwh: h.prediction_kwh || 0, actual: h.actual_kwh || 0 }));
                             forecast.todayTotal = todayPreds.reduce((s, h) => s + (h.prediction_kwh || 0), 0);
 
                             // Korrigierte Tagesprognose aus daily_forecasts (prediction_kwh_display)
@@ -5606,8 +5983,13 @@
                             forecast.tomorrowHours = tomorrowPreds.map(h => ({ hour: h.target_hour, kwh: h.prediction_kwh || 0 }));
                             forecast.tomorrowTotal = tomorrowPreds.reduce((s, h) => s + (h.prediction_kwh || 0), 0);
 
-                            // Fallback: Wenn keine stündlichen Daten für morgen, nutze daily_forecasts
-                            if (forecast.tomorrowHours.length === 0 && solar.data.forecasts?.tomorrow) {
+                            // Fallback: Wenn keine stündlichen Daten für morgen, nutze multi_day_hourly
+                            if (forecast.tomorrowHours.length === 0 && solar.data.multi_day_hourly?.[tomorrowStr]) {
+                                const multiDayTomorrow = solar.data.multi_day_hourly[tomorrowStr];
+                                const tomorrowHourly = (multiDayTomorrow.hourly || []).filter(h => h.hour >= 6 && h.hour <= 20);
+                                forecast.tomorrowHours = tomorrowHourly.map(h => ({ hour: h.hour, kwh: h.prediction_kwh || 0 }));
+                                forecast.tomorrowTotal = multiDayTomorrow.total_kwh || tomorrowHourly.reduce((s, h) => s + (h.prediction_kwh || 0), 0);
+                            } else if (forecast.tomorrowHours.length === 0 && solar.data.forecasts?.tomorrow) {
                                 forecast.tomorrowTotal = solar.data.forecasts.tomorrow.prediction_kwh || 0;
                             }
 
@@ -5616,8 +5998,13 @@
                             forecast.dayAfterTomorrowHours = dayAfterTomorrowPreds.map(h => ({ hour: h.target_hour, kwh: h.prediction_kwh || 0 }));
                             forecast.dayAfterTomorrowTotal = dayAfterTomorrowPreds.reduce((s, h) => s + (h.prediction_kwh || 0), 0);
 
-                            // Fallback: Wenn keine stündlichen Daten für übermorgen, nutze daily_forecasts
-                            if (forecast.dayAfterTomorrowHours.length === 0 && solar.data.forecasts?.day_after_tomorrow) {
+                            // Fallback: Wenn keine stündlichen Daten für übermorgen, nutze multi_day_hourly
+                            if (forecast.dayAfterTomorrowHours.length === 0 && solar.data.multi_day_hourly?.[dayAfterTomorrowStr]) {
+                                const multiDayAfter = solar.data.multi_day_hourly[dayAfterTomorrowStr];
+                                const afterHourly = (multiDayAfter.hourly || []).filter(h => h.hour >= 6 && h.hour <= 20);
+                                forecast.dayAfterTomorrowHours = afterHourly.map(h => ({ hour: h.hour, kwh: h.prediction_kwh || 0 }));
+                                forecast.dayAfterTomorrowTotal = multiDayAfter.total_kwh || afterHourly.reduce((s, h) => s + (h.prediction_kwh || 0), 0);
+                            } else if (forecast.dayAfterTomorrowHours.length === 0 && solar.data.forecasts?.day_after_tomorrow) {
                                 forecast.dayAfterTomorrowTotal = solar.data.forecasts.day_after_tomorrow.prediction_kwh || 0;
                             }
 
@@ -6013,63 +6400,99 @@
                     if (!charts.powerSourcesPreview) return;
 
                     try {
-                        const response = await fetch('/api/sfml_stats/power_sources_history?hours=12');
+                        const response = await fetch('/api/sfml_stats/power_sources_history?hours=24');
                         const result = await response.json();
 
                         if (!result.success || !result.data) return;
 
-                        const data = result.data;
+                        // Filter auf heute (nur Daten ab Mitternacht)
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const allData = result.data.filter(d => {
+                            const dt = new Date(d.timestamp);
+                            return dt >= today;
+                        });
+
+                        if (allData.length === 0) return;
+
+                        // Filter auf Produktionszeitraum: nur Datenpunkte mit solar_power > 0
+                        // oder alle Punkte zwischen erstem und letztem Produktionspunkt
+                        let firstProductionIdx = allData.findIndex(d => (d.solar_power || 0) > 10);
+                        let lastProductionIdx = allData.length - 1;
+                        for (let i = allData.length - 1; i >= 0; i--) {
+                            if ((allData[i].solar_power || 0) > 10) {
+                                lastProductionIdx = i;
+                                break;
+                            }
+                        }
+
+                        // Wenn keine Produktion, zeige letzte 6 Stunden
+                        if (firstProductionIdx === -1) {
+                            firstProductionIdx = Math.max(0, allData.length - 72); // 6h bei 5min Intervall
+                            lastProductionIdx = allData.length - 1;
+                        }
+
+                        // Etwas Puffer hinzufügen (30 min vor und nach)
+                        firstProductionIdx = Math.max(0, firstProductionIdx - 6);
+                        lastProductionIdx = Math.min(allData.length - 1, lastProductionIdx + 6);
+
+                        const data = allData.slice(firstProductionIdx, lastProductionIdx + 1);
+
                         const timestamps = data.map(d => {
                             const dt = new Date(d.timestamp);
                             return dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                         });
-                        const solar = data.map(d => (d.solar_to_house || 0) / 1000);
-                        const battery = data.map(d => (d.battery_to_house || 0) / 1000);
-                        const grid = data.map(d => (d.grid_to_house || 0) / 1000);
-                        const consumption = data.map(d => (d.home_consumption || 0) / 1000);
+                        const solarPower = data.map(d => d.solar_power || 0);
 
                         charts.powerSourcesPreview.setOption({
                             tooltip: {
                                 trigger: 'axis',
-                                axisPointer: { type: 'cross' },
+                                axisPointer: { type: 'line', lineStyle: { color: '#FFB74D' } },
                                 backgroundColor: 'rgba(30, 30, 62, 0.95)',
-                                borderColor: '#00ffff',
+                                borderColor: '#FFB74D',
                                 textStyle: { color: '#fff' },
                                 formatter: function(params) {
                                     var html = '<div style="font-weight:bold; margin-bottom:5px;">' + params[0].axisValue + '</div>';
                                     params.forEach(function(p) {
-                                        html += '<div>' + p.marker + ' ' + p.seriesName + ': <b>' + (p.value ? p.value.toFixed(3) : 0) + ' kW</b></div>';
+                                        html += '<div>' + p.marker + ' ' + p.seriesName + ': <b>' + Math.round(p.value || 0) + ' W</b></div>';
                                     });
                                     return html;
                                 }
                             },
-                            legend: {
-                                data: ['Solar', 'Batterie', 'Netz', 'Verbrauch'],
-                                textStyle: { color: '#94a3b8', fontSize: 10 },
-                                top: 0
-                            },
-                            grid: { left: 50, right: 20, top: 35, bottom: 60 },
+                            grid: { left: 50, right: 20, top: 15, bottom: 30 },
                             xAxis: {
                                 type: 'category',
                                 data: timestamps,
-                                axisLabel: { color: '#64748b', fontSize: 9, interval: Math.floor(timestamps.length / 8) }
+                                axisLabel: { color: '#64748b', fontSize: 9, interval: Math.floor(timestamps.length / 6) },
+                                axisLine: { lineStyle: { color: '#404040' } }
                             },
                             yAxis: {
                                 type: 'value',
-                                name: 'kW',
-                                nameTextStyle: { color: '#94a3b8' },
+                                name: 'W',
+                                nameTextStyle: { color: '#94a3b8', fontSize: 10 },
                                 axisLabel: { color: '#64748b', fontSize: 9 },
                                 splitLine: { lineStyle: { color: '#303030' } }
                             },
-                            dataZoom: [
-                                { type: 'slider', start: 0, end: 100, height: 20, bottom: 10 },
-                                { type: 'inside' }
-                            ],
                             series: [
-                                { name: 'Solar', type: 'line', stack: 'src', areaStyle: { opacity: 0.7 }, data: solar, itemStyle: { color: '#FFB74D' }, showSymbol: false, smooth: true },
-                                { name: 'Batterie', type: 'line', stack: 'src', areaStyle: { opacity: 0.7 }, data: battery, itemStyle: { color: '#4DD0E1' }, showSymbol: false, smooth: true },
-                                { name: 'Netz', type: 'line', stack: 'src', areaStyle: { opacity: 0.7 }, data: grid, itemStyle: { color: '#90CAF9' }, showSymbol: false, smooth: true },
-                                { name: 'Verbrauch', type: 'line', data: consumption, itemStyle: { color: '#ffffff' }, lineStyle: { width: 2 }, showSymbol: false, smooth: true }
+                                {
+                                    name: 'PV-Leistung',
+                                    type: 'line',
+                                    data: solarPower,
+                                    itemStyle: { color: '#FFB74D' },
+                                    lineStyle: { width: 2, color: '#FFB74D' },
+                                    areaStyle: {
+                                        color: {
+                                            type: 'linear',
+                                            x: 0, y: 0, x2: 0, y2: 1,
+                                            colorStops: [
+                                                { offset: 0, color: 'rgba(255, 183, 77, 0.6)' },
+                                                { offset: 1, color: 'rgba(255, 183, 77, 0.1)' }
+                                            ]
+                                        }
+                                    },
+                                    showSymbol: false,
+                                    smooth: true
+                                }
                             ]
                         });
                     } catch (error) {
@@ -6091,17 +6514,39 @@
                         .filter(h => h.target_date === todayStr)
                         .sort((a, b) => a.target_hour - b.target_hour);
 
-                    // Erstelle 24h Array (0-23)
-                    const hours = Array.from({length: 24}, (_, i) => i);
+                    // Produktionszeit dynamisch aus Astrodaten (±2 Stunden)
+                    let START_HOUR = 6;  // Fallback
+                    let END_HOUR = 20;   // Fallback
+
+                    // Versuche sunrise/sunset aus sunPosition zu lesen (Format: "08:15" oder "2025-12-15T08:15:00+01:00")
+                    if (sunPosition.sunrise) {
+                        const sunriseStr = sunPosition.sunrise;
+                        let sunriseHour;
+                        if (sunriseStr.includes('T')) {
+                            sunriseHour = parseInt(sunriseStr.split('T')[1].split(':')[0]);
+                        } else {
+                            sunriseHour = parseInt(sunriseStr.split(':')[0]);
+                        }
+                        START_HOUR = Math.max(0, sunriseHour - 2);
+                    }
+                    if (sunPosition.sunset) {
+                        const sunsetStr = sunPosition.sunset;
+                        let sunsetHour;
+                        if (sunsetStr.includes('T')) {
+                            sunsetHour = parseInt(sunsetStr.split('T')[1].split(':')[0]);
+                        } else {
+                            sunsetHour = parseInt(sunsetStr.split(':')[0]);
+                        }
+                        END_HOUR = Math.min(23, sunsetHour + 2);
+                    }
+
+                    const hours = Array.from({length: END_HOUR - START_HOUR + 1}, (_, i) => i + START_HOUR);
 
                     // Tatsächliche Produktion (kWh pro Stunde) - 0 für fehlende Stunden
-                    // Mit 60 Minuten Offset (1 Stunde nach rechts verschoben)
-                    const actualDataRaw = hours.map(h => {
+                    const actualData = hours.map(h => {
                         const found = todayData.find(d => d.target_hour === h);
                         return found?.actual_kwh ?? 0;
                     });
-                    // Offset: Verschiebe die Daten um 1 Stunde nach rechts
-                    const actualData = [0, ...actualDataRaw.slice(0, -1)];
 
                     // Vorhersage (kWh pro Stunde) - 0 für fehlende Stunden
                     const forecastData = hours.map(h => {
@@ -6232,6 +6677,33 @@
                 function updatePanelGroupCharts() {
                     if (!panelGroups.available || !panelGroups.groups) return;
 
+                    // Produktionszeit dynamisch aus Astrodaten (±2 Stunden)
+                    let START_HOUR = 6;  // Fallback
+                    let END_HOUR = 20;   // Fallback
+
+                    if (sunPosition.sunrise) {
+                        const sunriseStr = sunPosition.sunrise;
+                        let sunriseHour;
+                        if (sunriseStr.includes('T')) {
+                            sunriseHour = parseInt(sunriseStr.split('T')[1].split(':')[0]);
+                        } else {
+                            sunriseHour = parseInt(sunriseStr.split(':')[0]);
+                        }
+                        START_HOUR = Math.max(0, sunriseHour - 2);
+                    }
+                    if (sunPosition.sunset) {
+                        const sunsetStr = sunPosition.sunset;
+                        let sunsetHour;
+                        if (sunsetStr.includes('T')) {
+                            sunsetHour = parseInt(sunsetStr.split('T')[1].split(':')[0]);
+                        } else {
+                            sunsetHour = parseInt(sunsetStr.split(':')[0]);
+                        }
+                        END_HOUR = Math.min(23, sunsetHour + 2);
+                    }
+
+                    const hours = Array.from({length: END_HOUR - START_HOUR + 1}, (_, i) => i + START_HOUR);
+
                     // Für jede Panel-Gruppe einen Chart erstellen/aktualisieren
                     for (const [groupName, groupData] of Object.entries(panelGroups.groups)) {
                         const chartEl = panelGroupChartRefs[groupName];
@@ -6245,8 +6717,7 @@
                         const chart = panelGroupCharts[groupName];
                         const hourlyData = groupData.hourly || [];
 
-                        // Erstelle 24h Arrays
-                        const hours = Array.from({length: 24}, (_, i) => i);
+                        // Erstelle Arrays nur für Produktionszeit
                         const actualData = hours.map(h => {
                             const found = hourlyData.find(d => d.hour === h);
                             return found?.actual_kwh ?? 0;
@@ -6262,16 +6733,7 @@
                                 trigger: 'axis',
                                 backgroundColor: '#1e1e3e',
                                 borderColor: '#00ffff33',
-                                textStyle: { color: '#e2e8f0' },
-                                formatter: params => {
-                                    let result = `<b>${params[0].axisValue}</b><br/>`;
-                                    params.forEach(p => {
-                                        if (p.value !== null && p.value !== undefined && p.value > 0) {
-                                            result += `${p.marker} ${p.seriesName}: <b>${parseFloat(p.value).toFixed(4)} kWh</b><br/>`;
-                                        }
-                                    });
-                                    return result;
-                                }
+                                textStyle: { color: '#e2e8f0' }
                             },
                             legend: { data: ['IST', 'Prognose'], textStyle: { color: '#94a3b8' }, top: 0 },
                             grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
@@ -6291,29 +6753,28 @@
                             series: [
                                 {
                                     name: 'IST',
-                                    type: 'bar',
+                                    type: 'line',
                                     data: actualData,
-                                    itemStyle: {
+                                    smooth: true,
+                                    lineStyle: { color: '#00ff88', width: 3 },
+                                    itemStyle: { color: '#00ff88' },
+                                    symbol: 'circle',
+                                    symbolSize: 6,
+                                    areaStyle: {
                                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                            { offset: 0, color: '#00ff88' },
-                                            { offset: 1, color: '#00ff8833' }
+                                            { offset: 0, color: 'rgba(0, 255, 136, 0.4)' },
+                                            { offset: 1, color: 'rgba(0, 255, 136, 0.05)' }
                                         ])
-                                    },
-                                    barWidth: '40%'
+                                    }
                                 },
                                 {
                                     name: 'Prognose',
                                     type: 'line',
                                     data: forecastData,
                                     smooth: true,
-                                    lineStyle: { color: '#8b5cf6', width: 2 },
+                                    lineStyle: { color: '#8b5cf6', width: 2, type: 'dashed' },
                                     itemStyle: { color: '#8b5cf6' },
-                                    areaStyle: {
-                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                            { offset: 0, color: '#8b5cf633' },
-                                            { offset: 1, color: '#8b5cf600' }
-                                        ])
-                                    }
+                                    symbol: 'none'
                                 }
                             ]
                         });
@@ -6479,6 +6940,8 @@
                     priceStats, priceStatsTomorrow, sunPosition, bestHour, currentPrice,
                     todayAccuracy, historyStats, energyBalance,
                     panelGroups, panelGroupChartRefs,
+                    panelGroupModal, openPanelGroupModal, closePanelGroupModal, getPanelGroupDeviation, getPanelGroupHourlyData,
+                    productionTodayModal, openProductionTodayModal, closeProductionTodayModal, getProductionTodayDeviation, getProductionTodayHourlyData,
                     solarModal, openSolarModal, closeSolarModal, exportSolarAnalytics,
                     batteryModal, openBatteryModal, closeBatteryModal, exportBatteryAnalytics,
                     houseModal, openHouseModal, closeHouseModal, exportHouseAnalytics,
