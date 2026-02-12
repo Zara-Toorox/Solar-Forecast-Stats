@@ -367,5 +367,5 @@ See [LICENSE](LICENSE) for full terms.
 
 ## Support
 
-- [GitHub Issues](https://github.com/Zara-Toorox/sfml_stats/issues)
-- [Documentation](https://github.com/Zara-Toorox/sfml_stats)
+- [GitHub Issues](https://github.com/Zara-Toorox/Solar-Forecast-Stats/issues)
+- [Documentation](https://github.com/Zara-Toorox/Solar-Forecast-Stats)
