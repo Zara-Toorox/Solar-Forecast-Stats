@@ -1,6 +1,6 @@
 # SFML Stats Dashboard
 
-[![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](https://github.com/Zara-Toorox/sfml_stats)
+[![Version](https://img.shields.io/badge/version-10.6.0-blue.svg)](https://github.com/Zara-Toorox/Solar-Forecast-Stats)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
@@ -62,7 +62,9 @@ The integration requires sufficient CPU and memory resources for generating char
 
 ## Screenshots
 
-*Coming soon*
+![Dashboard Overview](docs/images/stats_01.png)
+
+![Energy Statistics](docs/images/stats_02.png)
 
 ---
 
