@@ -1,0 +1,16 @@
+{
+  "domain": "sfml_stats",
+  "name": "SFML Stats",
+  "codeowners": ["@Zara-Toorox"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "after_dependencies": ["solar_forecast_ml"],
+  "requirements": [
+    "matplotlib==3.9.2",
+    "aiofiles>=23.0.0"
+  ],
+  "version": "10.6.0",
+  "iot_class": "local_polling",
+  "documentation": "https://github.com/Zara-Toorox/sfml_stats",
+  "issue_tracker": "https://github.com/Zara-Toorox/sfml_stats/issues"
+}

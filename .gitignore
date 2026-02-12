@@ -1,0 +1,16 @@
+# Hidden directories and files
+.*
+!.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+
+# RTF files (local docs)
+*.rtf
+*.rtfd/
+
+# Source folder
+src/
