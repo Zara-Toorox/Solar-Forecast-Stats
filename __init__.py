@@ -10,6 +10,20 @@
 """SFML Stats integration for Home Assistant. @zara"""
 from __future__ import annotations
 
+
+# PyArmor Runtime Path Setup - MUST be before any protected module imports
+import sys
+from pathlib import Path as _Path
+_runtime_path = str(_Path(__file__).parent)
+if _runtime_path not in sys.path:
+    sys.path.insert(0, _runtime_path)
+
+# Pre-load PyArmor runtime at module level (before async event loop)
+try:
+    import pyarmor_runtime_009810  # noqa: F401
+except ImportError:
+    pass  # Runtime not present (development mode)
+
 import logging
 from datetime import datetime
 from pathlib import Path
