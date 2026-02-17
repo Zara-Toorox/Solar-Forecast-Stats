@@ -15,7 +15,7 @@ from typing import Final
 
 DOMAIN: Final = "sfml_stats"
 NAME: Final = "SFML Stats"
-VERSION: Final = "10.6.0"
+VERSION: Final = "12.0.0"
 
 SOLAR_FORECAST_ML_BASE: Final = Path("solar_forecast_ml")
 SOLAR_FORECAST_ML_STATS: Final = SOLAR_FORECAST_ML_BASE / "stats"
@@ -187,6 +187,7 @@ CONF_BILLING_FIXED_PRICE: Final = "billing_fixed_price"
 CONF_FEED_IN_TARIFF: Final = "feed_in_tariff"
 
 CONF_PANEL_GROUP_NAMES: Final = "panel_group_names"
+CONF_SHOW_PANEL_GROUPS: Final = "show_panel_groups"
 
 PRICE_MODE_FIXED: Final = "fixed"
 PRICE_MODE_DYNAMIC: Final = "dynamic"
@@ -316,8 +317,6 @@ CONF_FORECAST_ENTITY_2_NAME: Final = "forecast_entity_2_name"
 
 DEFAULT_FORECAST_ENTITY_1_NAME: Final = "Externe Prognose 1"
 DEFAULT_FORECAST_ENTITY_2_NAME: Final = "Externe Prognose 2"
-
-EXTERNAL_FORECASTS_HISTORY: Final = "external_forecasts_history.json"
 
 FORECAST_COMPARISON_RETENTION_DAYS: Final = 30
 FORECAST_COMPARISON_CHART_DAYS: Final = 7

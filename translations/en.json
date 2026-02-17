@@ -254,7 +254,8 @@
         "menu_options": {
           "panels": "PV Panels",
           "panel_group_names": "Panel Group Names",
-          "forecast_comparison": "Forecast Comparison"
+          "forecast_comparison": "Forecast Comparison",
+          "debug_mode": "Full-KI Transparency Mode"
         }
       },
       "panels": {
@@ -306,7 +307,22 @@
           "forecast_entity_2": "Sensor with daily forecast in kWh (e.g. sensor.forecast_solar_energy_today).",
           "forecast_entity_2_name": "Display name in chart (e.g. 'Forecast.Solar')."
         }
+      },
+      "debug_mode": {
+        "title": "Full-KI Transparency Mode (developers only!)",
+        "description": "Show/hide advanced KI statistics and charts.\nAccess code required.",
+        "data": {
+          "debug_code": "Access code",
+          "show_panel_groups": "Enable Full-KI Transparency Mode"
+        },
+        "data_description": {
+          "debug_code": "Enter the developer access code",
+          "show_panel_groups": "Shows advanced charts like daily production, billing, AI status and panel groups"
+        }
       }
+    },
+    "error": {
+      "invalid_code": "Invalid access code!"
     }
   }
 }

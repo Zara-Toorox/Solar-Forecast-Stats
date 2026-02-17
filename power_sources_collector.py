@@ -36,6 +36,10 @@ from .const import (
     CONF_SENSOR_HEATPUMP_DAILY,
     CONF_SENSOR_HEATINGROD_DAILY,
     CONF_SENSOR_WALLBOX_DAILY,
+    CONF_SENSOR_PANEL1_POWER,
+    CONF_SENSOR_PANEL2_POWER,
+    CONF_SENSOR_PANEL3_POWER,
+    CONF_SENSOR_PANEL4_POWER,
 )
 
 _W_KEY_TO_DB_COLUMN: dict[str, str] = {
@@ -51,6 +55,7 @@ from .sfml_data_reader import SFMLDataReader
 _LOGGER = logging.getLogger(__name__)
 
 COLLECTION_INTERVAL = 300
+LIVE_MIN_INTERVAL = 5  # Minimum seconds between live DB writes (debounce)
 
 MAX_DATA_AGE_DAYS = 7
 
@@ -66,6 +71,9 @@ class PowerSourcesCollector:
         self._db_path = Path(hass.config.path()) / "solar_forecast_ml" / "solar_forecast.db"
         self._task: asyncio.Task | None = None
         self._running = False
+        self._live_columns_ensured = False
+        self._last_live_write: float = 0
+        self._live_unsub: list = []
         self._sfml_reader = SFMLDataReader(hass)
 
     @asynccontextmanager
@@ -96,11 +104,15 @@ class PowerSourcesCollector:
 
         self._running = True
         self._task = asyncio.create_task(self._collection_loop())
+        self._setup_live_listeners()
         _LOGGER.info("Power Sources Collector started (using SFML database)")
 
     async def stop(self) -> None:
         """Stop the data collection task. @zara"""
         self._running = False
+        for unsub in self._live_unsub:
+            unsub()
+        self._live_unsub.clear()
         if self._task:
             self._task.cancel()
             try:
@@ -118,6 +130,93 @@ class PowerSourcesCollector:
                 _LOGGER.error("Error collecting power sources data: %s", e)
 
             await asyncio.sleep(COLLECTION_INTERVAL)
+
+    def _setup_live_listeners(self) -> None:
+        """Register state change listeners for live power sensors. @zara"""
+        from homeassistant.helpers.event import async_track_state_change_event
+
+        live_sensor_keys = [
+            CONF_SENSOR_PANEL1_POWER,
+            CONF_SENSOR_PANEL2_POWER,
+            CONF_SENSOR_PANEL3_POWER,
+            CONF_SENSOR_PANEL4_POWER,
+        ]
+
+        entity_ids = []
+        # Solar power from SFML reader
+        power_entity = self._sfml_reader.get_power_entity_id()
+        if power_entity:
+            entity_ids.append(power_entity)
+        # Solar to battery
+        stb = self.config.get(CONF_SENSOR_SOLAR_TO_BATTERY)
+        if stb:
+            entity_ids.append(stb)
+        # Panel sensors
+        for key in live_sensor_keys:
+            eid = self.config.get(key)
+            if eid:
+                entity_ids.append(eid)
+
+        if not entity_ids:
+            _LOGGER.debug("No live power sensors configured - live tracking disabled")
+            return
+
+        unsub = async_track_state_change_event(
+            self.hass, entity_ids, self._on_live_sensor_change
+        )
+        self._live_unsub.append(unsub)
+        _LOGGER.info("Live power tracking active for %d sensors", len(entity_ids))
+
+    async def _on_live_sensor_change(self, event) -> None:
+        """Handle sensor state change - write to sensor_power_live. @zara"""
+        import time
+        now_ts = time.monotonic()
+        if now_ts - self._last_live_write < LIVE_MIN_INTERVAL:
+            return
+        self._last_live_write = now_ts
+
+        try:
+            await self._write_live_power()
+        except Exception as e:
+            _LOGGER.error("Error writing live power data: %s", e)
+
+    async def _write_live_power(self) -> None:
+        """Write current power values to sensor_power_live. @zara"""
+        local_now = datetime.now().astimezone()
+        solar_power = self._sfml_reader.get_live_power() or 0
+        solar_to_battery = self._get_sensor_value(CONF_SENSOR_SOLAR_TO_BATTERY) or 0
+        panel1 = self._get_sensor_value(CONF_SENSOR_PANEL1_POWER)
+        panel2 = self._get_sensor_value(CONF_SENSOR_PANEL2_POWER)
+        panel3 = self._get_sensor_value(CONF_SENSOR_PANEL3_POWER)
+        panel4 = self._get_sensor_value(CONF_SENSOR_PANEL4_POWER)
+
+        async with self._get_db() as db:
+            if not self._live_columns_ensured:
+                await self._ensure_power_live_columns(db)
+                self._live_columns_ensured = True
+
+            await db.execute("""
+                INSERT INTO sensor_power_live (
+                    timestamp, power_watt, solar_to_battery_watt,
+                    panel1_watt, panel2_watt, panel3_watt, panel4_watt
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                local_now.strftime("%Y-%m-%d %H:%M:%S"),
+                solar_power,
+                solar_to_battery,
+                panel1, panel2, panel3, panel4,
+            ))
+
+            # Retention cleanup (nur jede 100. Schreiboperation)
+            import random
+            if random.random() < 0.01:
+                cutoff = (local_now - timedelta(days=MAX_DATA_AGE_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+                await db.execute(
+                    "DELETE FROM sensor_power_live WHERE timestamp < ?",
+                    (cutoff,)
+                )
+
+            await db.commit()
 
     async def _collect_data(self) -> None:
         """Collect current power values and store in SFML database. @zara"""
@@ -269,6 +368,21 @@ class PowerSourcesCollector:
         except Exception as e:
             _LOGGER.error("Error reading power sources history from DB: %s", e)
             return []
+
+    async def _ensure_power_live_columns(self, db: aiosqlite.Connection) -> None:
+        """Ensure panel columns exist in sensor_power_live table. @zara"""
+        async with db.execute("PRAGMA table_info(sensor_power_live)") as cursor:
+            rows = await cursor.fetchall()
+            existing = {row[1] for row in rows}
+
+        for col in ("panel1_watt", "panel2_watt", "panel3_watt", "panel4_watt"):
+            if col not in existing:
+                try:
+                    await db.execute(f"ALTER TABLE sensor_power_live ADD COLUMN {col} REAL")
+                    _LOGGER.info("Added column %s to sensor_power_live", col)
+                except Exception:
+                    pass
+        await db.commit()
 
     async def _ensure_db_columns(self, db: aiosqlite.Connection) -> None:
         """Ensure all required columns exist in stats_daily_energy table. @zara"""

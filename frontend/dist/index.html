@@ -1240,8 +1240,8 @@
                 </div>
             </section>
 
-            <!-- Tagesproduktion Chart (direkt unter Energiefluss) -->
-            <section class="chart-card sortable-item" data-section="todayProduction" style="margin-bottom: var(--spacing-lg);">
+            <!-- Tagesproduktion Chart - nur im Full-KI Transparency Mode -->
+            <section class="chart-card sortable-item" data-section="todayProduction" style="margin-bottom: var(--spacing-lg);" v-if="panelGroups.available">
                 <div class="chart-header" @click="openProductionTodayModal" style="cursor: pointer;">
                     <div class="chart-title">📅 Tages-Energieertrag (Echtzeit-Scan)</div>
                     <div class="chart-stats">
@@ -1426,8 +1426,8 @@
                 </div><!-- Ende v-show liveWidgets -->
             </section>
 
-            <!-- ========== ENERGIE-BILANZ WIDGET (JAHRESBILANZ) ========== -->
-            <section class="energy-balance-container collapsible-section sortable-item" data-section="energyBalance">
+            <!-- ========== ENERGIE-BILANZ WIDGET (JAHRESBILANZ) - nur im Full-KI Transparency Mode ========== -->
+            <section class="energy-balance-container collapsible-section sortable-item" data-section="energyBalance" v-if="panelGroups.available">
                 <div class="energy-balance-header">
                     <div class="energy-balance-title">
                         <span>💰</span> Sternenflotten-Abrechnung
@@ -1694,8 +1694,8 @@
                 </div>
             </section>
 
-            <!-- KI-Status -->
-            <section v-if="aiStatus.loaded" class="collapsible-section sortable-item" data-section="aiStatus" style="margin-top: var(--spacing-lg);">
+            <!-- KI-Status - nur im Full-KI Transparency Mode -->
+            <section v-if="aiStatus.loaded && panelGroups.available" class="collapsible-section sortable-item" data-section="aiStatus" style="margin-top: var(--spacing-lg);">
                 <div class="section-header" @click="toggleSection('aiStatus')">
                     <span class="section-title">🧠 KI-Status</span>
                     <span class="section-toggle">{{ isSectionCollapsed('aiStatus') ? '+' : '−' }}</span>
@@ -7136,10 +7136,10 @@
 
                             // Neuer Tages-Chart mit aktueller Solarleistung
                             const currentSolarPower = energyFlow.flows.solar_power || 0;
-                            updateTodayProductionChart(hourly, currentSolarPower);
 
-                            // Panel-Gruppen Charts aktualisieren (nextTick warten bis DOM gerendert)
+                            // nextTick warten bis DOM gerendert (v-if="panelGroups.available")
                             Vue.nextTick(() => {
+                                updateTodayProductionChart(hourly, currentSolarPower);
                                 updatePanelGroupCharts();
                             });
 
@@ -7692,6 +7692,10 @@
                 }
 
                 function updateTodayProductionChart(hourly, currentSolarPower) {
+                    // Lazy init: chart may not exist yet if section was hidden via v-if
+                    if (!charts.todayProduction && todayProductionChart.value) {
+                        charts.todayProduction = echarts.init(todayProductionChart.value);
+                    }
                     if (!charts.todayProduction) return;
 
                     const now = new Date();
@@ -8083,6 +8087,7 @@
                     interval = setInterval(fetchData, _pollInterval);
                 }
 
+                // Watch debug mode: when sections become visible, force data refresh
                 onMounted(() => {
                     initCharts();
                     fetchBillingData();

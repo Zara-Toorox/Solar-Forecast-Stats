@@ -126,6 +126,7 @@ from ..const import (
     CONF_BILLING_PRICE_MODE,
     DEFAULT_BILLING_PRICE_MODE,
     CONF_PANEL_GROUP_NAMES,
+    CONF_SHOW_PANEL_GROUPS,
     CONF_DASHBOARD_STYLE,
     DEFAULT_DASHBOARD_STYLE,
     CONF_THEME,
@@ -753,58 +754,41 @@ class SolarDataView(HomeAssistantView):
             "data": {},
         }
 
-        forecasts_data = await _read_json_file(SOLAR_PATH / "stats" / "daily_forecasts.json")
-        if forecasts_data and "history" in forecasts_data and len(forecasts_data["history"]) > 0:
+        try:
+            reader = _get_solar_reader()
             cutoff = date.today() - timedelta(days=days)
+            summaries = await reader.async_get_daily_summaries(
+                start_date=cutoff,
+                end_date=date.today()
+            )
             result["data"]["daily"] = [
                 {
-                    "date": h["date"],
+                    "date": s.date.isoformat(),
                     "overall": {
-                        "predicted_total_kwh": h.get("predicted_kwh", 0),
-                        "actual_total_kwh": h.get("actual_kwh", 0),
-                        "accuracy_percent": h.get("accuracy", 0),
-                        "peak_kwh": (h.get("peak_power_w", 0) or 0) / 1000,
+                        "predicted_total_kwh": s.predicted_total_kwh,
+                        "actual_total_kwh": s.actual_total_kwh,
+                        "accuracy_percent": s.accuracy_percent,
+                        "error_kwh": s.error_kwh,
+                        "production_hours": s.production_hours,
+                        "peak_hour": s.peak_hour,
+                        "peak_kwh": s.peak_kwh,
+                    },
+                    "time_windows": {
+                        "morning_accuracy": s.morning_accuracy,
+                        "midday_accuracy": s.midday_accuracy,
+                        "afternoon_accuracy": s.afternoon_accuracy,
+                    },
+                    "ml_metrics": {
+                        "mae": s.ml_mae,
+                        "rmse": s.ml_rmse,
+                        "r2_score": s.ml_r2_score,
                     }
                 }
-                for h in forecasts_data["history"]
-                if date.fromisoformat(h["date"]) >= cutoff
+                for s in summaries
             ]
-        else:
-            try:
-                reader = _get_solar_reader()
-                cutoff = date.today() - timedelta(days=days)
-                summaries = await reader.async_get_daily_summaries(
-                    start_date=cutoff,
-                    end_date=date.today()
-                )
-                result["data"]["daily"] = [
-                    {
-                        "date": s.date.isoformat(),
-                        "overall": {
-                            "predicted_total_kwh": s.predicted_total_kwh,
-                            "actual_total_kwh": s.actual_total_kwh,
-                            "accuracy_percent": s.accuracy_percent,
-                            "error_kwh": s.error_kwh,
-                            "production_hours": s.production_hours,
-                            "peak_hour": s.peak_hour,
-                            "peak_kwh": s.peak_kwh,
-                        },
-                        "time_windows": {
-                            "morning_accuracy": s.morning_accuracy,
-                            "midday_accuracy": s.midday_accuracy,
-                            "afternoon_accuracy": s.afternoon_accuracy,
-                        },
-                        "ml_metrics": {
-                            "mae": s.ml_mae,
-                            "rmse": s.ml_rmse,
-                            "r2_score": s.ml_r2_score,
-                        }
-                    }
-                    for s in summaries
-                ]
-            except Exception as e:
-                _LOGGER.error("Error loading daily summaries from database: %s", e)
-                result["data"]["daily"] = []
+        except Exception as e:
+            _LOGGER.error("Error loading daily summaries from database: %s", e)
+            result["data"]["daily"] = []
 
         if include_hourly:
             try:
@@ -895,18 +879,30 @@ class SolarDataView(HomeAssistantView):
                 "day_after_tomorrow": {"date": None, "prediction_kwh": None, "prediction_kwh_display": None},
             }
 
-        astronomy = await _read_json_file(SOLAR_PATH / "stats" / "astronomy_cache.json")
-        if astronomy and "days" in astronomy:
+        # Read astronomy data from DB
+        try:
             cutoff_str = (date.today() - timedelta(days=days)).isoformat()
-            result["data"]["astronomy"] = {
-                k: {
-                    "daylight_hours": v.get("daylight_hours"),
-                    "sunrise": v.get("sunrise_local"),
-                    "sunset": v.get("sunset_local"),
+            async with _get_db() as db:
+                async with db.execute(
+                    """SELECT cache_date, sunrise, sunset, daylight_hours
+                       FROM astronomy_cache
+                       WHERE cache_date >= ? AND hour = 12
+                       ORDER BY cache_date""",
+                    (cutoff_str,),
+                ) as cursor:
+                    astro_rows = await cursor.fetchall()
+
+            if astro_rows:
+                result["data"]["astronomy"] = {
+                    r["cache_date"]: {
+                        "daylight_hours": r["daylight_hours"],
+                        "sunrise": r["sunrise"],
+                        "sunset": r["sunset"],
+                    }
+                    for r in astro_rows
                 }
-                for k, v in astronomy["days"].items()
-                if k >= cutoff_str
-            }
+        except Exception as e:
+            _LOGGER.error("Error loading astronomy history from DB: %s", e)
 
         try:
             reader = _get_solar_reader()
@@ -1076,35 +1072,35 @@ class SummaryDataView(HomeAssistantView):
             except Exception:
                 return None
 
-        astronomy = await _read_json_file(SOLAR_PATH / "stats" / "astronomy_cache.json")
         today_str = date.today().isoformat()
-        today_astronomy = {}
-        if astronomy and "days" in astronomy:
-            today_astronomy = astronomy["days"].get(today_str, {})
 
-        forecasts = await _read_json_file(SOLAR_PATH / "stats" / "daily_forecasts.json")
-        if forecasts and "today" in forecasts:
-            production_time = forecasts["today"].get("production_time", {})
-            start_time = production_time.get("start_time")
-            end_time = production_time.get("end_time")
+        # Read astronomy data from DB
+        try:
+            async with _get_db() as db:
+                async with db.execute(
+                    """SELECT sunrise, sunset, daylight_hours
+                       FROM astronomy_cache
+                       WHERE cache_date = ? AND hour = 12""",
+                    (today_str,),
+                ) as cursor:
+                    astro_row = await cursor.fetchone()
 
-            if not start_time:
-                start_time = today_astronomy.get("production_window_start")
-            if not end_time:
-                end_time = today_astronomy.get("production_window_end")
-
-            result["production_time"] = {
-                "active": production_time.get("active", False),
-                "start_time": extract_time(start_time),
-                "end_time": extract_time(end_time),
-                "duration_seconds": production_time.get("duration_seconds", 0),
-            }
-
-        if today_astronomy:
-            result["sun_times"] = {
-                "sunrise": extract_time(today_astronomy.get("sunrise_local")),
-                "sunset": extract_time(today_astronomy.get("sunset_local")),
-            }
+            if astro_row:
+                sunrise = extract_time(astro_row["sunrise"])
+                sunset = extract_time(astro_row["sunset"])
+                result["sun_times"] = {
+                    "sunrise": sunrise,
+                    "sunset": sunset,
+                }
+                if sunrise and sunset:
+                    result["production_time"] = {
+                        "active": True,
+                        "start_time": sunrise,
+                        "end_time": sunset,
+                        "duration_seconds": int((astro_row["daylight_hours"] or 0) * 3600),
+                    }
+        except Exception as e:
+            _LOGGER.error("Error loading astronomy data from DB: %s", e)
 
         return web.json_response(result)
 
@@ -1430,32 +1426,40 @@ class EnergyFlowView(HomeAssistantView):
         return None
 
     async def _get_sun_position(self) -> dict[str, Any] | None:
-        """Read current sun position from astronomy_cache.json. @zara"""
-        astronomy = await _read_json_file(SOLAR_PATH / "stats" / "astronomy_cache.json")
-        if not astronomy or "days" not in astronomy:
-            return None
-
+        """Read current sun position from astronomy_cache DB table. @zara"""
         today_str = date.today().isoformat()
-        today_data = astronomy["days"].get(today_str)
-        if not today_data:
-            return None
-
         current_hour = datetime.now().hour
-        hourly = today_data.get("hourly", {})
-        current_hourly = hourly.get(str(current_hour), {})
 
-        azimuth = current_hourly.get("azimuth_deg", 0)
-        direction = self._azimuth_to_direction(azimuth)
+        try:
+            async with _get_db() as db:
+                # Get current hour's astronomy data
+                async with db.execute(
+                    """SELECT sun_elevation_deg, sun_azimuth_deg,
+                              sunrise, sunset, solar_noon, daylight_hours
+                       FROM astronomy_cache
+                       WHERE cache_date = ? AND hour = ?""",
+                    (today_str, current_hour),
+                ) as cursor:
+                    row = await cursor.fetchone()
 
-        return {
-            "elevation_deg": current_hourly.get("elevation_deg"),
-            "azimuth_deg": azimuth,
-            "direction": direction,
-            "sunrise": self._extract_time(today_data.get("sunrise_local")),
-            "sunset": self._extract_time(today_data.get("sunset_local")),
-            "solar_noon": self._extract_time(today_data.get("solar_noon_local")),
-            "daylight_hours": today_data.get("daylight_hours"),
-        }
+            if not row:
+                return None
+
+            azimuth = row["sun_azimuth_deg"] or 0
+            direction = self._azimuth_to_direction(azimuth)
+
+            return {
+                "elevation_deg": row["sun_elevation_deg"],
+                "azimuth_deg": azimuth,
+                "direction": direction,
+                "sunrise": self._extract_time(row["sunrise"]),
+                "sunset": self._extract_time(row["sunset"]),
+                "solar_noon": self._extract_time(row["solar_noon"]),
+                "daylight_hours": row["daylight_hours"],
+            }
+        except Exception as e:
+            _LOGGER.error("Error loading sun position from DB: %s", e)
+            return None
 
     def _azimuth_to_direction(self, azimuth: float) -> str:
         """Convert azimuth degrees to cardinal direction. @zara"""
@@ -1467,12 +1471,15 @@ class EnergyFlowView(HomeAssistantView):
         return directions[index]
 
     def _extract_time(self, iso_string: str | None) -> str | None:
-        """Extract HH:MM from ISO string. @zara"""
+        """Extract HH:MM from ISO or DB datetime string. @zara"""
         if not iso_string:
             return None
         try:
             if "T" in iso_string:
                 time_part = iso_string.split("T")[1]
+                return time_part[:5]
+            if " " in iso_string:
+                time_part = iso_string.split(" ")[1]
                 return time_part[:5]
             return iso_string[:5]
         except Exception:
@@ -1791,6 +1798,11 @@ class StatisticsView(HomeAssistantView):
 
     async def _get_panel_group_data(self) -> dict[str, Any]:
         """Extract panel group predictions and actuals for today. @zara"""
+        # Check if panel groups are enabled in config
+        config = _get_config()
+        if not config.get(CONF_SHOW_PANEL_GROUPS, False):
+            return {"available": False, "groups": {}}
+
         current_hour = datetime.now().hour
 
         try:
@@ -2730,22 +2742,28 @@ class ClothingRecommendationView(HomeAssistantView):
                 "error": str(err)
             }, status=500)
 
+    @staticmethod
+    def _nvl(value: Any, default: Any) -> Any:
+        """Return value if not None, otherwise default. @zara"""
+        return value if value is not None else default
+
     async def _get_weather_data(self) -> dict | None:
         """Get current weather data from SFML database. @zara"""
         today_str = date.today().isoformat()
         current_hour = str(datetime.now().hour)
+        nvl = self._nvl
 
         weather_actual_db = await _get_weather_from_db(days=1)
         if weather_actual_db and today_str in weather_actual_db and current_hour in weather_actual_db[today_str]:
             hour_data = weather_actual_db[today_str][current_hour]
             return {
-                "temperature": hour_data.get("temperature_c", 15),
-                "humidity": hour_data.get("humidity_percent", 50),
-                "wind_speed": hour_data.get("wind_speed_ms", 0),
-                "precipitation": hour_data.get("precipitation_mm", 0),
-                "cloud_cover": hour_data.get("cloud_cover_percent", 50),
+                "temperature": nvl(hour_data.get("temperature_c"), 15),
+                "humidity": nvl(hour_data.get("humidity_percent"), 50),
+                "wind_speed": nvl(hour_data.get("wind_speed_ms"), 0),
+                "precipitation": nvl(hour_data.get("precipitation_mm"), 0),
+                "cloud_cover": nvl(hour_data.get("cloud_cover_percent"), 50),
                 "pressure": 1013,
-                "radiation": hour_data.get("solar_radiation_wm2", 0),
+                "radiation": nvl(hour_data.get("solar_radiation_wm2"), 0),
                 "uv_index": 0,
             }
 
@@ -2754,13 +2772,13 @@ class ClothingRecommendationView(HomeAssistantView):
             hour_data = forecast_data[today_str].get(current_hour, {})
             if hour_data:
                 return {
-                    "temperature": hour_data.get("temperature", 15),
-                    "humidity": hour_data.get("humidity", 50),
-                    "wind_speed": hour_data.get("wind_speed", 0),
-                    "precipitation": hour_data.get("precipitation", 0),
-                    "cloud_cover": hour_data.get("cloud_cover", 50),
+                    "temperature": nvl(hour_data.get("temperature"), 15),
+                    "humidity": nvl(hour_data.get("humidity"), 50),
+                    "wind_speed": nvl(hour_data.get("wind_speed"), 0),
+                    "precipitation": nvl(hour_data.get("precipitation"), 0),
+                    "cloud_cover": nvl(hour_data.get("cloud_cover"), 50),
                     "pressure": 1013,
-                    "radiation": hour_data.get("solar_radiation_wm2", 0),
+                    "radiation": nvl(hour_data.get("solar_radiation_wm2"), 0),
                     "uv_index": 0,
                 }
 
@@ -2768,14 +2786,14 @@ class ClothingRecommendationView(HomeAssistantView):
         weather_ha = _get_weather_data(config.get(CONF_WEATHER_ENTITY))
         if weather_ha:
             return {
-                "temperature": weather_ha.get("temperature", 15),
-                "humidity": weather_ha.get("humidity", 50),
-                "wind_speed": weather_ha.get("wind_speed", 0),
+                "temperature": nvl(weather_ha.get("temperature"), 15),
+                "humidity": nvl(weather_ha.get("humidity"), 50),
+                "wind_speed": nvl(weather_ha.get("wind_speed"), 0),
                 "precipitation": 0,
-                "cloud_cover": weather_ha.get("cloud_coverage", 50),
-                "pressure": weather_ha.get("pressure", 1013),
+                "cloud_cover": nvl(weather_ha.get("cloud_coverage"), 50),
+                "pressure": nvl(weather_ha.get("pressure"), 1013),
                 "radiation": 0,
-                "uv_index": weather_ha.get("uv_index", 0),
+                "uv_index": nvl(weather_ha.get("uv_index"), 0),
             }
 
         return None

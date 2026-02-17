@@ -76,15 +76,20 @@ CLOTHING_OPTIONS = {
 }
 
 
+def _nvl(value: Any, default: Any) -> Any:
+    """Return value if not None, otherwise default. @zara"""
+    return value if value is not None else default
+
+
 def get_recommendation(weather_data: dict[str, Any], forecast_hours: list[dict] | None = None) -> ClothingRecommendation:
     """Generate clothing recommendation based on weather data. @zara"""
-    temp = weather_data.get("temperature", 15)
-    humidity = weather_data.get("humidity", 50)
-    wind_speed = weather_data.get("wind_speed", 0)
-    precipitation = weather_data.get("precipitation", 0)
-    cloud_cover = weather_data.get("cloud_cover", 50)
-    uv_index = weather_data.get("uv_index", 0)
-    radiation = weather_data.get("radiation", 0)
+    temp = _nvl(weather_data.get("temperature"), 15)
+    humidity = _nvl(weather_data.get("humidity"), 50)
+    wind_speed = _nvl(weather_data.get("wind_speed"), 0)
+    precipitation = _nvl(weather_data.get("precipitation"), 0)
+    cloud_cover = _nvl(weather_data.get("cloud_cover"), 50)
+    uv_index = _nvl(weather_data.get("uv_index"), 0)
+    radiation = _nvl(weather_data.get("radiation"), 0)
 
     rain_prob = 0
     if forecast_hours:

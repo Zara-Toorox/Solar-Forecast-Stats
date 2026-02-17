@@ -257,7 +257,8 @@
         },
         "menu_options": {
           "panels": "PV Panels",
-          "panel_group_names": "Panel Group Names"
+          "panel_group_names": "Panel Group Names",
+          "debug_mode": "Debug Mode"
         }
       },
       "panels": {
@@ -293,7 +294,22 @@
         "data_description": {
           "panel_group_names_input": "Rename panel groups. Format: Old=New,Old2=New2"
         }
+      },
+      "debug_mode": {
+        "title": "Debug Mode (developers only!)",
+        "description": "Show/hide advanced statistics and charts.\nAccess code required.",
+        "data": {
+          "debug_code": "Access code",
+          "show_panel_groups": "Enable debug mode"
+        },
+        "data_description": {
+          "debug_code": "Enter the developer access code",
+          "show_panel_groups": "Shows advanced charts like daily production, billing, AI status and panel groups"
+        }
       }
+    },
+    "error": {
+      "invalid_code": "Invalid access code!"
     }
   }
 }

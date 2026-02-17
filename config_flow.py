@@ -85,6 +85,7 @@ from .const import (
     PRICE_MODE_FIXED,
     PRICE_MODE_NONE,
     CONF_PANEL_GROUP_NAMES,
+    CONF_SHOW_PANEL_GROUPS,
     CONF_FORECAST_ENTITY_1,
     CONF_FORECAST_ENTITY_2,
     CONF_FORECAST_ENTITY_1_NAME,
@@ -701,6 +702,8 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                 return await self.async_step_panel_group_names()
             elif next_step == "forecast_comparison":
                 return await self.async_step_forecast_comparison()
+            elif next_step == "debug_mode":
+                return await self.async_step_debug_mode()
 
         return self.async_show_form(
             step_id="advanced",
@@ -709,6 +712,7 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                     "panels": "PV-Panels",
                     "panel_group_names": "Panel-Gruppen Namen",
                     "forecast_comparison": "Prognose-Vergleich",
+                    "debug_mode": "Full-KI Transparency Mode",
                 }),
             }),
         )
@@ -847,5 +851,43 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                     CONF_FORECAST_ENTITY_2_NAME,
                     default=current.get(CONF_FORECAST_ENTITY_2_NAME, DEFAULT_FORECAST_ENTITY_2_NAME),
                 ): str,
+            }),
+        )
+
+    async def async_step_debug_mode(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> FlowResult:
+        """Debug mode toggle with code protection. @zara"""
+        DEBUG_CODE = "4711"
+        errors = {}
+
+        if user_input is not None:
+            code = str(user_input.get("debug_code", "")).strip()
+            if code != DEBUG_CODE:
+                errors["debug_code"] = "invalid_code"
+            else:
+                enabled = user_input.get(CONF_SHOW_PANEL_GROUPS, False)
+                new_data = {**self._config_entry.data, CONF_SHOW_PANEL_GROUPS: enabled}
+                self.hass.config_entries.async_update_entry(
+                    self._config_entry, data=new_data
+                )
+                # Update in-memory config immediately
+                for eid, edata in self.hass.data.get(DOMAIN, {}).items():
+                    if isinstance(edata, dict) and "config" in edata:
+                        edata["config"][CONF_SHOW_PANEL_GROUPS] = enabled
+                return self.async_create_entry(title="", data={})
+
+        current = self._config_entry.data
+        is_active = current.get(CONF_SHOW_PANEL_GROUPS, False)
+
+        return self.async_show_form(
+            step_id="debug_mode",
+            errors=errors,
+            data_schema=vol.Schema({
+                vol.Required("debug_code"): selector.TextSelector(
+                    selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+                ),
+                vol.Optional(CONF_SHOW_PANEL_GROUPS, default=is_active): selector.BooleanSelector(),
             }),
         )

@@ -1,10 +1,12 @@
 # SFML Stats Dashboard
 
-[![Version](https://img.shields.io/badge/version-10.6.0-blue.svg)](https://github.com/Zara-Toorox/Solar-Forecast-Stats)
+[![Version](https://img.shields.io/badge/version-12.0.0-blue.svg)](https://github.com/Zara-Toorox/sfml_stats)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
-<a href='https://ko-fi.com/Q5Q41NMZZY' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://ko-fi.com/img/githubbutton_sm.svg' border='0' alt='Buy Me a Coffee ' /></a>
+Fuel my late-night ideas with a coffee? I'd really appreciate it!
+
+<a href='https://ko-fi.com/Q5Q41NMZZY' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://ko-fi.com/img/githubbutton_sm.svg' border='0' alt='Buy Me a Coffee' /></a>
 
 **Comprehensive Energy Monitoring Dashboard for Home Assistant**
 
@@ -62,9 +64,25 @@ The integration requires sufficient CPU and memory resources for generating char
 
 ## Screenshots
 
-![Dashboard Overview](docs/images/stats_01.png)
+### Energy Flow Dashboard
+Real-time visualization of your complete energy ecosystem — solar, battery, house, and grid with animated power flow lines.
 
-![Energy Statistics](docs/images/stats_02.png)
+![Energy Flow Dashboard](Pictures/energy-live.png)
+
+### LCARS Theme
+Star Trek-inspired LCARS interface with full energy monitoring — Solar Array, Warp Core (Battery), Habitat (House), and Power Matrix (Grid).
+
+![LCARS Theme](Pictures/lcars.png)
+
+### Developer Version — Energy Widgets
+Full energy widget display with live power values, Starfleet billing overview, and financial summary (requires Developer PIN).
+
+![Developer Energy Widgets](Pictures/developer_energy.png)
+
+### Developer Version — AI & Forecast Display
+Long-range forecast scanner, AI status, daily energy curve with forecast comparison, and per-panel group analytics (requires Developer PIN).
+
+![Developer AI Display](Pictures/developer_ki.png)
 
 ---
 
@@ -351,6 +369,34 @@ Or add it to your sidebar via the Home Assistant configuration.
 
 ---
 
+## Code Protection
+
+Parts of this integration are protected with [PyArmor](https://pyarmor.readthedocs.io/) obfuscation to safeguard proprietary algorithms and business logic.
+
+**Protected modules (22 files):**
+- `api/` — REST-API endpoints and WebSocket handlers
+- `charts/` — All analytics chart generators (weekly reports, battery, grid, solar, weather, etc.)
+- `readers/` — Data readers for solar, price, forecast, and weather data
+- `services/` — Billing calculator, daily/hourly aggregation, forecast comparison
+- Root-level — Central data reader, power sources collector, clothing recommendation
+
+**Unprotected (cleartext):**
+- `__init__.py`, `const.py`, `config_flow.py` — Integration setup and configuration
+- `storage/`, `utils/` — Infrastructure and utilities
+- `translations/`, `frontend/` — UI resources
+- Base classes, types, and helper modules
+
+The obfuscation targets Home Assistant OS (Alpine Linux / musl libc) on both x86_64 and aarch64 platforms.
+
+### Developer Version
+
+Starting with version 12.0.0, a **Developer Version** is available that provides full unobfuscated source code with complete AI display capabilities. This version is intended for development and debugging purposes.
+
+To obtain the Developer PIN, please contact the author directly:
+- **GitHub:** [@Zara-Toorox](https://github.com/Zara-Toorox)
+
+---
+
 ## License
 
 This software is licensed under a Proprietary Non-Commercial License.
@@ -359,7 +405,7 @@ This software is licensed under a Proprietary Non-Commercial License.
 - Commercial use and AI training are strictly prohibited
 - Clear attribution to "Zara-Toorox" is required
 
-Copyright (C) 2025 Zara-Toorox
+Copyright (C) 2026 Zara-Toorox
 
 See [LICENSE](LICENSE) for full terms.
 
@@ -367,5 +413,5 @@ See [LICENSE](LICENSE) for full terms.
 
 ## Support
 
-- [GitHub Issues](https://github.com/Zara-Toorox/Solar-Forecast-Stats/issues)
-- [Documentation](https://github.com/Zara-Toorox/Solar-Forecast-Stats)
+- [GitHub Issues](https://github.com/Zara-Toorox/sfml_stats/issues)
+- [Documentation](https://github.com/Zara-Toorox/sfml_stats)

@@ -135,7 +135,7 @@ body.lcars-theme {
 
 .lcars-header-stats {
     display: flex;
-    gap: 25px;
+    gap: clamp(10px, 2.5vw, 25px);
     align-items: center;
 }
 
@@ -411,6 +411,7 @@ body.lcars-theme {
     position: relative;
     min-height: clamp(280px, 50vh, 400px);
     aspect-ratio: 2 / 1;
+    container-type: inline-size;
 }
 
 /* ============================================
@@ -698,6 +699,22 @@ body.lcars-theme {
         font-size: 18px;
     }
 
+    .lcars-forecast-table-header,
+    .lcars-forecast-table-row {
+        grid-template-columns: 1.5fr 1fr 1fr 0.8fr;
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .lcars-forecast-table-cell {
+        font-size: 10px;
+    }
+
+    .lcars-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+    }
+
     .lcars-clothing-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
@@ -745,8 +762,9 @@ body.lcars-theme {
 
 .lcars-modal-content {
     padding: 20px;
-    max-height: 60vh;
+    max-height: clamp(50vh, 60dvh, 70vh);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .lcars-modal-section {
@@ -1055,6 +1073,7 @@ body.lcars-theme {
 
     .lcars-monitor-content {
         min-height: clamp(250px, 45vh, 350px);
+        aspect-ratio: auto;
     }
 }
 
@@ -1315,6 +1334,17 @@ body.lcars-theme {
         min-height: clamp(160px, 28vh, 250px);
     }
 
+    .lcars-forecast-table-header,
+    .lcars-forecast-table-row {
+        grid-template-columns: 1.2fr 1fr 1fr 0.7fr;
+        gap: 4px;
+        padding: 6px;
+    }
+
+    .lcars-forecast-table-cell {
+        font-size: 9px;
+    }
+
     .lcars-mobile-nav-inner {
         grid-template-columns: repeat(3, 1fr);
         gap: 6px;
@@ -1366,6 +1396,19 @@ body.lcars-theme {
     );
     z-index: 9999;
     opacity: 0.4;
+}
+
+/* Reduce scanlines on small screens for better readability */
+@media (max-width: 768px) {
+    .lcars-scanlines {
+        opacity: 0.2;
+    }
+}
+
+@media (max-width: 480px) {
+    .lcars-scanlines {
+        opacity: 0.1;
+    }
 }
 
 /* ============================================

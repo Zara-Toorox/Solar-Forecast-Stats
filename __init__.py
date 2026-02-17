@@ -348,6 +348,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         f"{DOMAIN}_initial_forecast_collection",
     )
 
+
+
     _LOGGER.info(
         "%s successfully set up. Export path: %s",
         NAME,
