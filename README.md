@@ -67,22 +67,22 @@ The integration requires sufficient CPU and memory resources for generating char
 ### Energy Flow Dashboard
 Real-time visualization of your complete energy ecosystem — solar, battery, house, and grid with animated power flow lines.
 
-![Energy Flow Dashboard](Pictures/energy-live.png)
+![Energy Flow Dashboard](pictures/energy-live.png)
 
 ### LCARS Theme
 Star Trek-inspired LCARS interface with full energy monitoring — Solar Array, Warp Core (Battery), Habitat (House), and Power Matrix (Grid).
 
-![LCARS Theme](Pictures/lcars.png)
+![LCARS Theme](pictures/lcars.png)
 
 ### Developer Version — Energy Widgets
 Full energy widget display with live power values, Starfleet billing overview, and financial summary (requires Developer PIN).
 
-![Developer Energy Widgets](Pictures/developer_energy.png)
+![Developer Energy Widgets](pictures/developer_energy.png)
 
 ### Developer Version — AI & Forecast Display
 Long-range forecast scanner, AI status, daily energy curve with forecast comparison, and per-panel group analytics (requires Developer PIN).
 
-![Developer AI Display](Pictures/developer_ki.png)
+![Developer AI Display](pictures/developer_ki.png)
 
 ---
 
