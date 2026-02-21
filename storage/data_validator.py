@@ -112,12 +112,14 @@ class DataValidator:
                 # Direct connection intentional: runs before DatabaseConnectionManager is created
                 import aiosqlite
                 async with aiosqlite.connect(str(solar_db_path)) as db:
+                    await db.execute("PRAGMA busy_timeout = 30000")
                     async with db.execute(
                         "SELECT COUNT(*) FROM GPM_price_history LIMIT 1"
                     ) as cursor:
                         row = await cursor.fetchone()
                         grid_available = row is not None and row[0] > 0
-            except Exception:
+            except (Exception) as err:
+                _LOGGER.debug("Grid price data check failed: %s", err)
                 grid_available = False
 
         self._source_status["grid_price_monitor"] = grid_available

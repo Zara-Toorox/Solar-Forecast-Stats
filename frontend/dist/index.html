@@ -3669,7 +3669,7 @@
                             const MODEL_LABELS = { 'tiny_lstm': 'Hybrid-KI', 'tinylstm': 'Hybrid-KI', 'ridge': 'Ridge', 'lstm': 'LSTM' };
                             aiStatus.model = MODEL_LABELS[m.active_model] || m.active_model || '—';
                             aiStatus.accuracy = m.accuracy != null ? m.accuracy.toFixed(1) : '—';
-                            aiStatus.rmse = m.rmse != null ? m.rmse.toFixed(2) : '—';
+                            aiStatus.rmse = m.rmse != null ? m.rmse.toFixed(3) : '—';
                             aiStatus.samples = m.training_samples != null ? m.training_samples.toLocaleString('de-DE') : '—';
                             aiStatus.dataPoints = d.training_data_points != null ? d.training_data_points.toLocaleString('de-DE') : '—';
                             if (m.last_trained) {
@@ -5375,8 +5375,8 @@
                     if (!panelGroupModal.groupData) return 0;
                     const actual = panelGroupModal.groupData.actual_total_kwh || 0;
                     const prediction = panelGroupModal.groupData.prediction_total_kwh || 0;
-                    if (prediction === 0) return 0;
-                    return ((actual - prediction) / prediction) * 100;
+                    if (actual === 0) return 0;
+                    return ((actual - prediction) / actual) * 100;
                 }
 
                 function getPanelGroupHourlyData() {
@@ -5388,8 +5388,8 @@
                             const actual = h.actual_kwh || 0;
                             const prediction = h.prediction_kwh || 0;
                             let deviation = 0;
-                            if (prediction > 0) {
-                                deviation = ((actual - prediction) / prediction) * 100;
+                            if (actual > 0) {
+                                deviation = ((actual - prediction) / actual) * 100;
                             }
                             return {
                                 hour: h.hour,
@@ -5412,8 +5412,8 @@
                 function getProductionTodayDeviation() {
                     const actual = energyFlow.statistics.solar_yield_daily || 0;
                     const prediction = forecast.todayTotal || 0;
-                    if (prediction === 0) return 0;
-                    return ((actual - prediction) / prediction) * 100;
+                    if (actual === 0) return 0;
+                    return ((actual - prediction) / actual) * 100;
                 }
 
                 function getProductionTodayHourlyData() {
@@ -5433,8 +5433,8 @@
                             const prediction = h.kwh || 0;
                             let deviation = 0;
                             let accuracy = 0;
-                            if (prediction > 0) {
-                                deviation = ((actual - prediction) / prediction) * 100;
+                            if (actual > 0) {
+                                deviation = ((actual - prediction) / actual) * 100;
                                 const absDeviation = Math.abs(deviation);
                                 accuracy = Math.max(0, 100 - absDeviation);
                             }
@@ -6872,6 +6872,8 @@
                 }
 
                 async function fetchData() {
+                    if (_isFetching) return;
+                    _isFetching = true;
                     try {
                         // energy_flow: always (real-time), others: conditional
                         const doStats = _needsFetch('statistics');
@@ -7094,7 +7096,7 @@
                             const actualFromSensor = energyFlow.statistics?.solar_yield_daily || 0;
                             const predictedTotal = forecast.todayTotal || 0;
                             if (predictedTotal > 0 && actualFromSensor > 0) {
-                                const deviation = Math.abs((actualFromSensor - predictedTotal) / predictedTotal) * 100;
+                                const deviation = Math.abs((actualFromSensor - predictedTotal) / actualFromSensor) * 100;
                                 todayAccuracy.value = Math.max(0, 100 - deviation);
                             }
 
@@ -7154,7 +7156,7 @@
                         }
 
                         lastUpdate.value = new Date().toLocaleTimeString('de-DE');
-                    } catch (e) { console.error('Fetch error:', e); }
+                    } catch (e) { console.error('Fetch error:', e); } finally { _isFetching = false; }
                 }
 
                 function initCharts() {
@@ -7265,12 +7267,12 @@
                         return ['So','Mo','Di','Mi','Do','Fr','Sa'][dateObj.getDay()];
                     });
 
-                    // Abweichung berechnen: (Tatsächlich - Prognose) / Prognose * 100
+                    // Abweichung berechnen: (Tatsächlich - Prognose) / Tatsächlich * 100
                     const deviationData = sorted.map(d => {
                         const actual = d.overall?.actual_total_kwh || 0;
                         const predicted = d.overall?.predicted_total_kwh || 0;
-                        if (predicted > 0) {
-                            return parseFloat(((actual - predicted) / predicted * 100).toFixed(1));
+                        if (actual > 0) {
+                            return parseFloat(((actual - predicted) / actual * 100).toFixed(1));
                         }
                         return 0;
                     });
@@ -7737,8 +7739,8 @@
                     const accuracyData = hours.map(h => {
                         const actual = actualData[h];
                         const pred = forecastData[h];
-                        if (actual != null && pred != null && pred > 0) {
-                            const deviation = Math.abs((actual - pred) / pred) * 100;
+                        if (actual != null && pred != null && actual > 0) {
+                            const deviation = Math.abs((actual - pred) / actual) * 100;
                             return Math.max(0, 100 - deviation);
                         }
                         return null;
@@ -8081,10 +8083,26 @@
 
                 // Visibility-based polling: 5s active, 30s background
                 let _pollInterval = 5000;
+                let _isFetching = false;
                 let interval;
                 function _startPolling() {
                     clearInterval(interval);
                     interval = setInterval(fetchData, _pollInterval);
+                }
+
+                function _onResize() {
+                    clearTimeout(_resizeTimer);
+                    _resizeTimer = setTimeout(_resizeAllCharts, 200);
+                }
+
+                function _onVisibilityChange() {
+                    if (document.hidden) {
+                        _pollInterval = 30000;
+                    } else {
+                        _pollInterval = 5000;
+                        fetchData(); // Sofort aktualisieren wenn Tab wieder sichtbar
+                    }
+                    _startPolling();
                 }
 
                 // Watch debug mode: when sections become visible, force data refresh
@@ -8095,19 +8113,8 @@
                     setTimeout(() => updatePowerSourcesPreviewChart(), 1500);
                     loadAIStatus();
                     _startPolling();
-                    window.addEventListener('resize', () => {
-                        clearTimeout(_resizeTimer);
-                        _resizeTimer = setTimeout(_resizeAllCharts, 200);
-                    });
-                    document.addEventListener('visibilitychange', () => {
-                        if (document.hidden) {
-                            _pollInterval = 30000;
-                        } else {
-                            _pollInterval = 5000;
-                            fetchData(); // Sofort aktualisieren wenn Tab wieder sichtbar
-                        }
-                        _startPolling();
-                    });
+                    window.addEventListener('resize', _onResize);
+                    document.addEventListener('visibilitychange', _onVisibilityChange);
                     setTimeout(() => {
                         initSortable();
                         initDragHoldFeedback();
@@ -8115,6 +8122,9 @@
                 });
                 onUnmounted(() => {
                     clearInterval(interval);
+                    clearTimeout(_resizeTimer);
+                    window.removeEventListener('resize', _onResize);
+                    document.removeEventListener('visibilitychange', _onVisibilityChange);
                     Object.values(charts).forEach(c => c?.dispose());
                 });
 

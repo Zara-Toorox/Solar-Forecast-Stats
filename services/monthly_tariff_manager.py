@@ -447,7 +447,7 @@ class MonthlyTariffManager:
                 content = await f.read()
                 daily_data = json.loads(content)
         except Exception as err:
-            return {"success": False, "error": str(err)}
+            return {"success": False, "error": "Internal server error"}
 
         days_updated = 0
         days = daily_data.get("days", {})
@@ -480,7 +480,7 @@ class MonthlyTariffManager:
             async with aiofiles.open(daily_file, "w", encoding="utf-8") as f:
                 await f.write(json.dumps(daily_data, indent=2, ensure_ascii=False))
         except Exception as err:
-            return {"success": False, "error": str(err)}
+            return {"success": False, "error": "Internal server error"}
 
         _LOGGER.info(
             "Recalculated %d days for %s with import=%.2f, export=%.2f, ref=%.2f ct/kWh",

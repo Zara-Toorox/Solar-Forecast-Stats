@@ -26,11 +26,14 @@ T = TypeVar("T")
 class TTLCache:
     """Simple TTL cache for async functions. @zara"""
 
+    MAX_SIZE: int = 500
+
     def __init__(self, ttl_seconds: int = API_CACHE_TTL_SECONDS) -> None:
         """Initialize the cache. @zara"""
         self._cache: dict[str, tuple[datetime, Any]] = {}
         self._ttl = timedelta(seconds=ttl_seconds)
         self._lock = asyncio.Lock()
+        self._set_count: int = 0
 
     async def get(self, key: str) -> tuple[bool, Any]:
         """Get a value from cache. @zara"""
@@ -46,6 +49,12 @@ class TTLCache:
         """Set a value in cache. @zara"""
         async with self._lock:
             self._cache[key] = (datetime.now(), value)
+            self._set_count += 1
+            if self._set_count % 100 == 0 or len(self._cache) > self.MAX_SIZE:
+                now = datetime.now()
+                expired = [k for k, (t, _) in self._cache.items() if now - t >= self._ttl]
+                for k in expired:
+                    del self._cache[k]
 
     async def invalidate(self, key: str) -> bool:
         """Invalidate a specific cache entry. @zara"""

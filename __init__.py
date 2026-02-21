@@ -319,10 +319,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except Exception as err:
             _LOGGER.error("Initial aggregation failed: %s", err)
 
-    hass.async_create_background_task(
+    task_aggregation = hass.async_create_background_task(
         _initial_aggregation(),
         f"{DOMAIN}_initial_aggregation",
     )
+    hass.data[DOMAIN][entry.entry_id]["_task_aggregation"] = task_aggregation
 
     async def _initial_forecast_collection() -> None:
         """Run initial forecast comparison collection if needed. @zara"""
@@ -357,10 +358,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except Exception as err:
             _LOGGER.error("Initial forecast comparison collection failed: %s", err)
 
-    hass.async_create_background_task(
+    task_forecast = hass.async_create_background_task(
         _initial_forecast_collection(),
         f"{DOMAIN}_initial_forecast_collection",
     )
+    hass.data[DOMAIN][entry.entry_id]["_task_forecast"] = task_forecast
 
 
 
@@ -420,6 +422,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if "weather_collector" in entry_data and entry_data["weather_collector"]:
         _LOGGER.debug("Weather collector cleaned up")
+
+    for task_key in ("_task_aggregation", "_task_forecast"):
+        task = entry_data.get(task_key)
+        if task is not None and not task.done():
+            task.cancel()
+            _LOGGER.debug("Background task %s cancelled", task_key)
 
     try:
         from homeassistant.components.persistent_notification import async_dismiss

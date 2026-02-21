@@ -15,7 +15,7 @@ from typing import Final
 
 DOMAIN: Final = "sfml_stats"
 NAME: Final = "SFML Stats"
-VERSION: Final = "12.0.0"
+VERSION: Final = "12.0.2"
 
 SOLAR_FORECAST_ML_BASE: Final = Path("solar_forecast_ml")
 SOLAR_FORECAST_ML_STATS: Final = SOLAR_FORECAST_ML_BASE / "stats"

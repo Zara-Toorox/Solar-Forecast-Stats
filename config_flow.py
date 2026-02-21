@@ -105,12 +105,6 @@ from .sensor_helpers import check_and_suggest_helpers
 
 _LOGGER = logging.getLogger(__name__)
 
-MONTHS_DE = {
-    1: "Januar", 2: "Februar", 3: "März", 4: "April",
-    5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
-    9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
-}
-
 MONTHS_EN = {
     1: "January", 2: "February", 3: "March", 4: "April",
     5: "May", 6: "June", 7: "July", 8: "August",
@@ -120,6 +114,7 @@ MONTHS_EN = {
 REQUIRED_SENSOR_KEYS = [
     CONF_SENSOR_HOME_CONSUMPTION,
     CONF_SENSOR_HOME_CONSUMPTION_DAILY,
+    CONF_SENSOR_SOLAR_TO_HOUSE,
 ]
 
 BATTERY_SENSOR_KEYS = [
@@ -130,13 +125,18 @@ BATTERY_SENSOR_KEYS = [
     CONF_SENSOR_GRID_TO_BATTERY,
     CONF_SENSOR_BATTERY_CHARGE_GRID_DAILY,
     CONF_SENSOR_BATTERY_SOC,
+    CONF_SENSOR_BATTERY_TO_GRID,
+    CONF_SENSOR_BATTERY_POWER,
 ]
 
 SMARTMETER_SENSOR_KEYS = [
     CONF_SENSOR_SMARTMETER_IMPORT,
     CONF_SENSOR_GRID_IMPORT_DAILY,
+    CONF_SENSOR_GRID_TO_HOUSE,
     CONF_SENSOR_SMARTMETER_EXPORT,
     CONF_SENSOR_GRID_EXPORT_DAILY,
+    CONF_SENSOR_HOUSE_TO_GRID,
+    CONF_SENSOR_GRID_IMPORT_YEARLY,
 ]
 
 OTHER_SENSOR_KEYS = [
@@ -144,14 +144,7 @@ OTHER_SENSOR_KEYS = [
     CONF_WEATHER_ENTITY,
 ]
 
-LEGACY_SENSOR_KEYS = [
-    CONF_SENSOR_SOLAR_TO_HOUSE,
-    CONF_SENSOR_GRID_TO_HOUSE,
-    CONF_SENSOR_HOUSE_TO_GRID,
-    CONF_SENSOR_BATTERY_TO_GRID,
-    CONF_SENSOR_BATTERY_POWER,
-    CONF_SENSOR_GRID_IMPORT_YEARLY,
-]
+LEGACY_SENSOR_KEYS = []
 
 ALL_SENSOR_KEYS = (
     REQUIRED_SENSOR_KEYS +
@@ -225,8 +218,9 @@ def _is_proxmox() -> bool:
         return False
 
 
-def get_entity_selector(domain: str = "sensor") -> selector.EntitySelector:
-    """Create an entity selector for the specified domain. @zara"""
+def _get_entity_selector(key: str) -> selector.EntitySelector:
+    """Create an entity selector with domain based on key. @zara"""
+    domain = "weather" if key == CONF_WEATHER_ENTITY else "sensor"
     return selector.EntitySelector(
         selector.EntitySelectorConfig(
             domain=domain,
@@ -235,13 +229,12 @@ def get_entity_selector(domain: str = "sensor") -> selector.EntitySelector:
     )
 
 
-def get_entity_selector_optional() -> selector.Selector:
-    """Create a text selector that allows clearing/removing the entity. @zara"""
-    return selector.TextSelector(
-        selector.TextSelectorConfig(
-            type=selector.TextSelectorType.TEXT,
-        )
-    )
+def _build_setup_sensor_schema(sensor_keys: list[str]) -> vol.Schema:
+    """Build schema for setup sensor configuration. @zara"""
+    schema_dict = {}
+    for key in sensor_keys:
+        schema_dict[vol.Optional(key)] = _get_entity_selector(key)
+    return vol.Schema(schema_dict)
 
 
 class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -275,44 +268,61 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="proxmox_not_recommended")
 
         if user_input is not None:
-            return await self.async_step_sensors()
+            return await self.async_step_sensors_setup()
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({}),
         )
 
-    async def async_step_sensors(
+    async def async_step_sensors_setup(
         self,
         user_input: dict[str, Any] | None = None,
     ) -> FlowResult:
-        """Handle sensor configuration - Simplified with groups. @zara"""
-        errors: dict[str, str] = {}
+        """Handle main sensor configuration. @zara"""
+        sensor_keys = REQUIRED_SENSOR_KEYS + OTHER_SENSOR_KEYS
 
         if user_input is not None:
             for key, value in user_input.items():
-                if value and isinstance(value, str) and value.strip():
+                if value is not None and isinstance(value, str) and value.strip():
+                    self._data[key] = value.strip()
+            return await self.async_step_battery_setup()
+
+        return self.async_show_form(
+            step_id="sensors_setup",
+            data_schema=_build_setup_sensor_schema(sensor_keys),
+        )
+
+    async def async_step_battery_setup(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> FlowResult:
+        """Handle battery sensor configuration (optional). @zara"""
+        if user_input is not None:
+            for key, value in user_input.items():
+                if value is not None and isinstance(value, str) and value.strip():
+                    self._data[key] = value.strip()
+            return await self.async_step_smartmeter_setup()
+
+        return self.async_show_form(
+            step_id="battery_setup",
+            data_schema=_build_setup_sensor_schema(BATTERY_SENSOR_KEYS),
+        )
+
+    async def async_step_smartmeter_setup(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> FlowResult:
+        """Handle smartmeter sensor configuration (optional). @zara"""
+        if user_input is not None:
+            for key, value in user_input.items():
+                if value is not None and isinstance(value, str) and value.strip():
                     self._data[key] = value.strip()
             return await self.async_step_helpers()
 
-        essential_keys = (
-            REQUIRED_SENSOR_KEYS +
-            BATTERY_SENSOR_KEYS +
-            SMARTMETER_SENSOR_KEYS +
-            OTHER_SENSOR_KEYS
-        )
-
-        schema_dict = {}
-        for key in essential_keys:
-            schema_dict[vol.Optional(key, default="")] = get_entity_selector_optional()
-
         return self.async_show_form(
-            step_id="sensors",
-            data_schema=vol.Schema(schema_dict),
-            errors=errors,
-            description_placeholders={
-                "info": "Hausverbrauch (W) ist Pflicht. Batterie und Smartmeter sind optional."
-            },
+            step_id="smartmeter_setup",
+            data_schema=_build_setup_sensor_schema(SMARTMETER_SENSOR_KEYS),
         )
 
     async def async_step_helpers(
@@ -350,8 +360,6 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input: dict[str, Any] | None = None,
     ) -> FlowResult:
         """Handle settings - General settings. @zara"""
-        errors: dict[str, str] = {}
-
         if user_input is not None:
             self._data.update(user_input)
             self._data[CONF_PANEL_GROUP_NAMES] = {}
@@ -370,6 +378,14 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default=DEFAULT_AUTO_GENERATE,
                 ): bool,
                 vol.Required(
+                    CONF_GENERATE_WEEKLY,
+                    default=DEFAULT_GENERATE_WEEKLY,
+                ): bool,
+                vol.Required(
+                    CONF_GENERATE_MONTHLY,
+                    default=DEFAULT_GENERATE_MONTHLY,
+                ): bool,
+                vol.Required(
                     CONF_THEME,
                     default=DEFAULT_THEME,
                 ): vol.In({
@@ -380,13 +396,13 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_DASHBOARD_STYLE,
                     default=DEFAULT_DASHBOARD_STYLE,
                 ): vol.In({
-                    DASHBOARD_STYLE_3D: "3D Isometrisch",
-                    DASHBOARD_STYLE_2D: "2D Klassisch",
+                    DASHBOARD_STYLE_3D: "3D Isometric",
+                    DASHBOARD_STYLE_2D: "2D Classic",
                 }),
                 vol.Required(
                     CONF_BILLING_START_MONTH,
                     default=DEFAULT_BILLING_START_MONTH,
-                ): vol.In(MONTHS_DE),
+                ): vol.In(MONTHS_EN),
                 vol.Required(
                     CONF_BILLING_START_DAY,
                     default=DEFAULT_BILLING_START_DAY,
@@ -395,9 +411,9 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_BILLING_PRICE_MODE,
                     default=DEFAULT_BILLING_PRICE_MODE,
                 ): vol.In({
-                    PRICE_MODE_DYNAMIC: "Dynamisch (Stundenpreise)",
-                    PRICE_MODE_FIXED: "Festpreis",
-                    PRICE_MODE_NONE: "Kein Tarif",
+                    PRICE_MODE_DYNAMIC: "Dynamic (hourly prices)",
+                    PRICE_MODE_FIXED: "Fixed price",
+                    PRICE_MODE_NONE: "No tariff",
                 }),
                 vol.Required(
                     CONF_BILLING_FIXED_PRICE,
@@ -424,7 +440,6 @@ class SFMLStatsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 ),
             }),
-            errors=errors,
         )
 
     @staticmethod
@@ -468,8 +483,8 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
         for key in sensor_keys:
             schema_dict[vol.Optional(
                 key,
-                description={"suggested_value": current.get(key, "")}
-            )] = get_entity_selector_optional()
+                description={"suggested_value": current.get(key) or None}
+            )] = _get_entity_selector(key)
         return vol.Schema(schema_dict)
 
     async def async_step_init(
@@ -496,12 +511,12 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema({
                 vol.Required("menu_choice", default="sensors_main"): vol.In({
-                    "sensors_main": "⚡ Haupt-Sensoren (Pflicht)",
-                    "sensors_battery": "🔋 Batterie-Sensoren (Optional)",
-                    "sensors_smartmeter": "📊 Smartmeter (Optional)",
-                    "consumers": "🏠 Verbraucher (WP, Heizstab, Wallbox)",
-                    "settings": "⚙️ Einstellungen",
-                    "advanced": "🔧 Erweitert",
+                    "sensors_main": "Main Sensors (Required)",
+                    "sensors_battery": "Battery Sensors (Optional)",
+                    "sensors_smartmeter": "Smartmeter (Optional)",
+                    "consumers": "Consumers (Heat Pump, Heating Rod, Wallbox)",
+                    "settings": "Settings",
+                    "advanced": "Advanced",
                 }),
             }),
         )
@@ -523,9 +538,6 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="sensors_main",
             data_schema=self._build_sensor_schema(sensor_keys),
-            description_placeholders={
-                "info": "Hausverbrauch (W) ist der wichtigste Sensor für die Energiebilanz."
-            },
         )
 
     async def async_step_sensors_battery(
@@ -543,9 +555,6 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="sensors_battery",
             data_schema=self._build_sensor_schema(BATTERY_SENSOR_KEYS),
-            description_placeholders={
-                "info": "Nur konfigurieren wenn Batteriespeicher vorhanden."
-            },
         )
 
     async def async_step_sensors_smartmeter(
@@ -563,9 +572,6 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="sensors_smartmeter",
             data_schema=self._build_sensor_schema(SMARTMETER_SENSOR_KEYS),
-            description_placeholders={
-                "info": "Für genaue Netzwerte. Ohne Smartmeter werden Werte geschätzt."
-            },
         )
 
     async def async_step_sensors(
@@ -643,13 +649,13 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                     CONF_DASHBOARD_STYLE,
                     default=current.get(CONF_DASHBOARD_STYLE, DEFAULT_DASHBOARD_STYLE),
                 ): vol.In({
-                    DASHBOARD_STYLE_3D: "3D Isometrisch",
-                    DASHBOARD_STYLE_2D: "2D Klassisch",
+                    DASHBOARD_STYLE_3D: "3D Isometric",
+                    DASHBOARD_STYLE_2D: "2D Classic",
                 }),
                 vol.Required(
                     CONF_BILLING_START_MONTH,
                     default=current.get(CONF_BILLING_START_MONTH, DEFAULT_BILLING_START_MONTH),
-                ): vol.In(MONTHS_DE),
+                ): vol.In(MONTHS_EN),
                 vol.Required(
                     CONF_BILLING_START_DAY,
                     default=current.get(CONF_BILLING_START_DAY, DEFAULT_BILLING_START_DAY),
@@ -658,9 +664,9 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                     CONF_BILLING_PRICE_MODE,
                     default=current.get(CONF_BILLING_PRICE_MODE, DEFAULT_BILLING_PRICE_MODE),
                 ): vol.In({
-                    PRICE_MODE_DYNAMIC: "Dynamisch (Stundenpreise)",
-                    PRICE_MODE_FIXED: "Festpreis",
-                    PRICE_MODE_NONE: "Kein Tarif",
+                    PRICE_MODE_DYNAMIC: "Dynamic (hourly prices)",
+                    PRICE_MODE_FIXED: "Fixed price",
+                    PRICE_MODE_NONE: "No tariff",
                 }),
                 vol.Required(
                     CONF_BILLING_FIXED_PRICE,
@@ -709,9 +715,9 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
             step_id="advanced",
             data_schema=vol.Schema({
                 vol.Required("menu_choice", default="panels"): vol.In({
-                    "panels": "PV-Panels",
-                    "panel_group_names": "Panel-Gruppen Namen",
-                    "forecast_comparison": "Prognose-Vergleich",
+                    "panels": "PV Panels",
+                    "panel_group_names": "Panel Group Names",
+                    "forecast_comparison": "Forecast Comparison",
                     "debug_mode": "Full-KI Transparency Mode",
                 }),
             }),
@@ -748,13 +754,13 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
             step_id="panels",
             data_schema=vol.Schema({
                 vol.Optional(CONF_PANEL1_NAME, default=current.get(CONF_PANEL1_NAME, DEFAULT_PANEL1_NAME)): str,
-                vol.Optional(CONF_SENSOR_PANEL1_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL1_POWER, "")}): get_entity_selector_optional(),
+                vol.Optional(CONF_SENSOR_PANEL1_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL1_POWER) or None}): _get_entity_selector(CONF_SENSOR_PANEL1_POWER),
                 vol.Optional(CONF_PANEL2_NAME, default=current.get(CONF_PANEL2_NAME, DEFAULT_PANEL2_NAME)): str,
-                vol.Optional(CONF_SENSOR_PANEL2_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL2_POWER, "")}): get_entity_selector_optional(),
+                vol.Optional(CONF_SENSOR_PANEL2_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL2_POWER) or None}): _get_entity_selector(CONF_SENSOR_PANEL2_POWER),
                 vol.Optional(CONF_PANEL3_NAME, default=current.get(CONF_PANEL3_NAME, DEFAULT_PANEL3_NAME)): str,
-                vol.Optional(CONF_SENSOR_PANEL3_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL3_POWER, "")}): get_entity_selector_optional(),
+                vol.Optional(CONF_SENSOR_PANEL3_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL3_POWER) or None}): _get_entity_selector(CONF_SENSOR_PANEL3_POWER),
                 vol.Optional(CONF_PANEL4_NAME, default=current.get(CONF_PANEL4_NAME, DEFAULT_PANEL4_NAME)): str,
-                vol.Optional(CONF_SENSOR_PANEL4_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL4_POWER, "")}): get_entity_selector_optional(),
+                vol.Optional(CONF_SENSOR_PANEL4_POWER, description={"suggested_value": current.get(CONF_SENSOR_PANEL4_POWER) or None}): _get_entity_selector(CONF_SENSOR_PANEL4_POWER),
             }),
         )
 
@@ -801,7 +807,7 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
                 ),
             }),
             description_placeholders={
-                "example": "Gruppe 1=String Süd, Gruppe 2=String West"
+                "example": "Group 1=South String, Group 2=West String"
             },
         )
 
@@ -837,16 +843,16 @@ class SFMLStatsOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Optional(
                     CONF_FORECAST_ENTITY_1,
-                    description={"suggested_value": current.get(CONF_FORECAST_ENTITY_1, "")},
-                ): get_entity_selector_optional(),
+                    description={"suggested_value": current.get(CONF_FORECAST_ENTITY_1) or None},
+                ): _get_entity_selector(CONF_FORECAST_ENTITY_1),
                 vol.Optional(
                     CONF_FORECAST_ENTITY_1_NAME,
                     default=current.get(CONF_FORECAST_ENTITY_1_NAME, DEFAULT_FORECAST_ENTITY_1_NAME),
                 ): str,
                 vol.Optional(
                     CONF_FORECAST_ENTITY_2,
-                    description={"suggested_value": current.get(CONF_FORECAST_ENTITY_2, "")},
-                ): get_entity_selector_optional(),
+                    description={"suggested_value": current.get(CONF_FORECAST_ENTITY_2) or None},
+                ): _get_entity_selector(CONF_FORECAST_ENTITY_2),
                 vol.Optional(
                     CONF_FORECAST_ENTITY_2_NAME,
                     default=current.get(CONF_FORECAST_ENTITY_2_NAME, DEFAULT_FORECAST_ENTITY_2_NAME),

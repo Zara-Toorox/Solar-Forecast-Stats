@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, AsyncIterator
@@ -96,8 +97,12 @@ class DatabaseConnectionManager:
         try:
             self._connection = await aiosqlite.connect(str(self._db_path))
             self._connection.row_factory = aiosqlite.Row
+            # Match SFML PRAGMA settings for shared DB compatibility @zara
+            await self._connection.execute("PRAGMA foreign_keys = ON")
+            await self._connection.execute("PRAGMA journal_mode = DELETE")
+            await self._connection.execute("PRAGMA busy_timeout = 30000")
             self._is_connected = True
-            _LOGGER.info("Database connection established: %s", self._db_path)
+            _LOGGER.info("Database connection established (DELETE mode, 30s timeout): %s", self._db_path)
             return True
         except Exception as err:
             _LOGGER.error("Failed to connect to database: %s", err)
@@ -147,30 +152,38 @@ class DatabaseConnectionManager:
         return await self.connect()
 
     async def execute_read(self, query: str, params: tuple | list | None = None) -> list[aiosqlite.Row]:
-        """Execute a read query with auto-reconnect. @zara"""
+        """Execute a read query with retry on lock and auto-reconnect. @zara"""
         if params is None:
             params = []
 
-        for attempt in range(2):
+        for attempt in range(3):
             if not await self._ensure_connected():
                 raise RuntimeError("Database not available")
             try:
                 async with self._connection.execute(query, params) as cursor:
                     return await cursor.fetchall()
             except aiosqlite.OperationalError as err:
-                if attempt == 0 and "database is locked" not in str(err):
-                    _LOGGER.warning("Read query failed (attempt 1), retrying: %s", err)
+                if "database is locked" in str(err) and attempt < 2:
+                    wait = (0.1 * (3 ** attempt)) + random.uniform(0, 0.05)
+                    _LOGGER.warning(
+                        "Stats DB locked on read (attempt %d/3), retrying in %.2fs",
+                        attempt + 1, wait
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                if attempt == 0:
+                    _LOGGER.warning("Read query failed (attempt 1), reconnecting: %s", err)
                     self._connection = None
                     self._is_connected = False
                     continue
                 raise
 
     async def execute_write(self, query: str, params: tuple | list | None = None) -> None:
-        """Execute a write query with auto-commit and auto-reconnect. @zara"""
+        """Execute a write query with retry on lock, auto-commit and auto-reconnect. @zara"""
         if params is None:
             params = []
 
-        for attempt in range(2):
+        for attempt in range(3):
             if not await self._ensure_connected():
                 raise RuntimeError("Database not available")
             try:
@@ -178,8 +191,16 @@ class DatabaseConnectionManager:
                 await self._connection.commit()
                 return
             except aiosqlite.OperationalError as err:
-                if attempt == 0 and "database is locked" not in str(err):
-                    _LOGGER.warning("Write query failed (attempt 1), retrying: %s", err)
+                if "database is locked" in str(err) and attempt < 2:
+                    wait = (0.1 * (3 ** attempt)) + random.uniform(0, 0.05)
+                    _LOGGER.warning(
+                        "Stats DB locked on write (attempt %d/3), retrying in %.2fs",
+                        attempt + 1, wait
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                if attempt == 0:
+                    _LOGGER.warning("Write query failed (attempt 1), reconnecting: %s", err)
                     self._connection = None
                     self._is_connected = False
                     continue
