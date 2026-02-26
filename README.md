@@ -2,7 +2,7 @@
   <img src="brand/logo@2x.png" alt="SFML Stats" width="250">
 </p>
 
-<h1 align="center">SFML Stats Dashboard V12 "Energiekontrolle"</h1>
+<h1 align="center">SFML Stats Dashboard V12 "Developer-Version"</h1>
 
 <p align="center">
   <strong>Comprehensive Energy Monitoring Dashboard for Home Assistant — Charts, Reports & Real-Time Flows</strong>
