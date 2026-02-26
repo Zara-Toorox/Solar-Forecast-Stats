@@ -1,0 +1,440 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SFML Stats - Bienvenido",
+        "description": "¡Bienvenido a SFML Stats!\n\nEsta integración registra tu producción solar, batería, consumo de red y calcula costes.\n\nHaz clic en SIGUIENTE para configurar tus sensores.",
+        "data": {},
+        "data_description": {}
+      },
+      "sensors_setup": {
+        "title": "Sensores principales",
+        "description": "Configura los sensores principales.\n\n**🏠 Consumo del hogar (W)** y **☀️ Solar → Casa (W)** son los sensores más importantes.\nDeja vacío si no está disponible.\n\nLa potencia solar se obtiene automáticamente de SFML.\n\n**Unidades requeridas:**\n- Potencia: Vatios (W)\n- Energía: kWh (con reinicio diario)\n- Precio: ct/kWh",
+        "data": {
+          "sensor_home_consumption": "🏠 Consumo del hogar (W)",
+          "sensor_home_consumption_daily": "🏠 Consumo del hogar hoy (kWh)",
+          "sensor_solar_to_house": "☀️ Solar → Casa (W)",
+          "sensor_price_total": "💰 Precio actual (ct/kWh)",
+          "weather_entity": "🌤️ Entidad meteorológica"
+        },
+        "data_description": {
+          "sensor_home_consumption": "Unidad: Vatios. Consumo eléctrico total actual del hogar, incluyendo todos los consumidores. Necesario para el diagrama de flujo energético en tiempo real. (Obligatorio)",
+          "sensor_home_consumption_daily": "Unidad: kWh. Consumo total del hogar desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_solar_to_house": "Unidad: Vatios. Parte de la potencia solar que fluye directamente a la casa. No es la producción total — ¡solo la parte de autoconsumo! (Obligatorio)",
+          "sensor_price_total": "Unidad: ct/kWh (bruto). Sensor dinámico, p. ej. de Tibber, Octopus Energy o EPEX Spot. No necesario con tarifa fija. (Opcional)",
+          "weather_entity": "Formato: weather.xxx. Integración meteorológica de Home Assistant para previsiones en los gráficos. ¡No es una entidad sensor, sino una entidad weather! (Opcional)"
+        }
+      },
+      "battery_setup": {
+        "title": "Sensores de batería (Opcional)",
+        "description": "Configura los sensores de batería. Omite si no tienes sistema de almacenamiento.\n\nLos sensores de W son necesarios para el diagrama de flujo energético en tiempo real.\nLos sensores de kWh son opcionales para estadísticas diarias más precisas.",
+        "data": {
+          "sensor_solar_to_battery": "☀️ Solar → Batería (W)",
+          "sensor_battery_charge_solar_daily": "☀️ Solar → Batería hoy (kWh)",
+          "sensor_battery_to_house": "🔋 Batería → Casa (W)",
+          "sensor_battery_discharge_daily": "🔋 Batería → Casa hoy (kWh)",
+          "sensor_grid_to_battery": "⚡ Red → Batería (W)",
+          "sensor_battery_charge_grid_daily": "⚡ Red → Batería hoy (kWh)",
+          "sensor_battery_soc": "📊 Estado de carga de batería (%)",
+          "sensor_battery_to_grid": "🔋 Batería → Red (W)",
+          "sensor_battery_power": "🔋 Potencia total de batería (W)"
+        },
+        "data_description": {
+          "sensor_solar_to_battery": "Unidad: Vatios. Potencia solar que fluye directamente a la batería. ¡Solo la parte de carga solar, no la carga total! (Opcional)",
+          "sensor_battery_charge_solar_daily": "Unidad: kWh. Energía solar cargada en la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_to_house": "Unidad: Vatios. Potencia descargada de la batería a la casa. ¡Solo la parte de descarga a la casa, no la descarga total! (Opcional)",
+          "sensor_battery_discharge_daily": "Unidad: kWh. Energía descargada de la batería a la casa hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_battery": "Unidad: Vatios. Potencia de red utilizada para cargar la batería. ¡Solo la parte de carga desde red, no la carga solar! (Opcional)",
+          "sensor_battery_charge_grid_daily": "Unidad: kWh. Energía de red usada para cargar la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_soc": "Unidad: Porcentaje (0–100). Estado de carga (SOC) actual de la batería. El valor debe estar entre 0 y 100, ¡no valores decimales como 0.0–1.0! (Opcional)",
+          "sensor_battery_to_grid": "Unidad: Vatios. Potencia de batería inyectada a la red. Solo relevante para inyección desde batería, p. ej. con precios negativos de electricidad. (Opcional)",
+          "sensor_battery_power": "Unidad: Vatios. Potencia total de batería en un solo sensor. Positivo = carga, Negativo = descarga. ¡Usar solo si no hay sensores separados de carga/descarga! (Opcional)"
+        }
+      },
+      "smartmeter_setup": {
+        "title": "Sensores del contador (Opcional)",
+        "description": "Configura los sensores del contador para valores de red precisos.\nOmite si no tienes contador inteligente — los valores serán estimados.\n\nLos sensores de W son necesarios para el diagrama de flujo energético en tiempo real.\nLos sensores de kWh son opcionales para estadísticas diarias más precisas.",
+        "data": {
+          "sensor_smartmeter_import": "📥 Importación de red (W)",
+          "sensor_grid_import_daily": "📥 Importación de red hoy (kWh)",
+          "sensor_grid_to_house": "⚡ Red → Casa (W)",
+          "sensor_smartmeter_export": "📤 Exportación a red (W)",
+          "sensor_grid_export_daily": "📤 Exportación a red hoy (kWh)",
+          "sensor_house_to_grid": "📤 Inyección de excedentes (W)",
+          "sensor_grid_import_yearly": "📊 Importación de red anual (kWh)"
+        },
+        "data_description": {
+          "sensor_smartmeter_import": "Unidad: Vatios. Importación total de red en el punto de medición. ¡Incluye TODA la potencia de red — incluyendo carga de batería desde red! (Opcional)",
+          "sensor_grid_import_daily": "Unidad: kWh. Importación total de red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_house": "Unidad: Vatios. Potencia de red que fluye directamente a la casa. ¡Sin carga de batería desde red! Diferencia con Importación de red: Solo la parte de consumo doméstico. (Opcional)",
+          "sensor_smartmeter_export": "Unidad: Vatios. Exportación total en el punto de medición. ¡Incluye TODA la inyección — incluyendo inyección de batería a red! (Opcional)",
+          "sensor_grid_export_daily": "Unidad: kWh. Exportación total a red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_house_to_grid": "Unidad: Vatios. Potencia excedente inyectada a la red. ¡Solo excedentes solares, no inyección de batería! Diferencia con Exportación a red: Solo la parte de excedentes. (Opcional)",
+          "sensor_grid_import_yearly": "Unidad: kWh. Importación total de red del año calendario actual. Se utiliza para la facturación anual y previsión de costes. (Opcional)"
+        }
+      },
+      "sensors": {
+        "title": "Configuración de sensores",
+        "description": "Configura todos los sensores. Deja vacío si no está disponible.\n\n**Sensores de W** son necesarios para el diagrama de flujo energético en tiempo real.\n**Sensores de kWh** son opcionales — si están disponibles, proporcionan estadísticas diarias más precisas.\n\n**Unidades requeridas:**\n- Potencia: Vatios (W)\n- Energía: kWh (con reinicio diario)\n- SOC: Porcentaje (0-100)\n- Precio: ct/kWh",
+        "data": {
+          "sensor_home_consumption": "🏠 Consumo del hogar (W)",
+          "sensor_home_consumption_daily": "🏠 Consumo del hogar hoy (kWh)",
+          "sensor_solar_to_house": "☀️ Solar → Casa (W)",
+          "sensor_solar_to_battery": "☀️ Solar → Batería (W)",
+          "sensor_battery_charge_solar_daily": "☀️ Solar → Batería hoy (kWh)",
+          "sensor_battery_to_house": "🔋 Batería → Casa (W)",
+          "sensor_battery_discharge_daily": "🔋 Batería → Casa hoy (kWh)",
+          "sensor_grid_to_battery": "⚡ Red → Batería (W)",
+          "sensor_battery_charge_grid_daily": "⚡ Red → Batería hoy (kWh)",
+          "sensor_battery_soc": "📊 Estado de carga de batería (%)",
+          "sensor_battery_to_grid": "🔋 Batería → Red (W)",
+          "sensor_battery_power": "🔋 Potencia total de batería (W)",
+          "sensor_smartmeter_import": "📥 Importación de red (W)",
+          "sensor_grid_import_daily": "📥 Importación de red hoy (kWh)",
+          "sensor_grid_to_house": "⚡ Red → Casa (W)",
+          "sensor_smartmeter_export": "📤 Exportación a red (W)",
+          "sensor_grid_export_daily": "📤 Exportación a red hoy (kWh)",
+          "sensor_house_to_grid": "📤 Inyección de excedentes (W)",
+          "sensor_grid_import_yearly": "📊 Importación de red anual (kWh)",
+          "sensor_price_total": "💰 Precio actual (ct/kWh)",
+          "weather_entity": "🌤️ Entidad meteorológica"
+        },
+        "data_description": {
+          "sensor_home_consumption": "Unidad: Vatios. Consumo eléctrico total actual del hogar, incluyendo todos los consumidores. Necesario para el diagrama de flujo energético en tiempo real. (Obligatorio)",
+          "sensor_home_consumption_daily": "Unidad: kWh. Consumo total del hogar desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_solar_to_house": "Unidad: Vatios. Parte de la potencia solar que fluye directamente a la casa. No es la producción total — ¡solo la parte de autoconsumo! (Obligatorio)",
+          "sensor_solar_to_battery": "Unidad: Vatios. Potencia solar que fluye directamente a la batería. ¡Solo la parte de carga solar, no la carga total! (Opcional)",
+          "sensor_battery_charge_solar_daily": "Unidad: kWh. Energía solar cargada en la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_to_house": "Unidad: Vatios. Potencia descargada de la batería a la casa. ¡Solo la parte de descarga a la casa, no la descarga total! (Opcional)",
+          "sensor_battery_discharge_daily": "Unidad: kWh. Energía descargada de la batería a la casa hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_battery": "Unidad: Vatios. Potencia de red utilizada para cargar la batería. ¡Solo la parte de carga desde red, no la carga solar! (Opcional)",
+          "sensor_battery_charge_grid_daily": "Unidad: kWh. Energía de red usada para cargar la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_soc": "Unidad: Porcentaje (0–100). Estado de carga (SOC) actual de la batería. El valor debe estar entre 0 y 100, ¡no valores decimales como 0.0–1.0! (Opcional)",
+          "sensor_battery_to_grid": "Unidad: Vatios. Potencia de batería inyectada a la red. Solo relevante para inyección desde batería, p. ej. con precios negativos de electricidad. (Opcional)",
+          "sensor_battery_power": "Unidad: Vatios. Potencia total de batería en un solo sensor. Positivo = carga, Negativo = descarga. ¡Usar solo si no hay sensores separados de carga/descarga! (Opcional)",
+          "sensor_smartmeter_import": "Unidad: Vatios. Importación total de red en el punto de medición. ¡Incluye TODA la potencia de red — incluyendo carga de batería desde red! (Opcional)",
+          "sensor_grid_import_daily": "Unidad: kWh. Importación total de red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_house": "Unidad: Vatios. Potencia de red que fluye directamente a la casa. ¡Sin carga de batería desde red! Diferencia con Importación de red: Solo la parte de consumo doméstico. (Opcional)",
+          "sensor_smartmeter_export": "Unidad: Vatios. Exportación total en el punto de medición. ¡Incluye TODA la inyección — incluyendo inyección de batería a red! (Opcional)",
+          "sensor_grid_export_daily": "Unidad: kWh. Exportación total a red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_house_to_grid": "Unidad: Vatios. Potencia excedente inyectada a la red. ¡Solo excedentes solares, no inyección de batería! Diferencia con Exportación a red: Solo la parte de excedentes. (Opcional)",
+          "sensor_grid_import_yearly": "Unidad: kWh. Importación total de red del año calendario actual. Se utiliza para la facturación anual y previsión de costes. (Opcional)",
+          "sensor_price_total": "Unidad: ct/kWh (bruto). Sensor dinámico, p. ej. de Tibber, Octopus Energy o EPEX Spot. No necesario con tarifa fija. (Opcional)",
+          "weather_entity": "Formato: weather.xxx. Integración meteorológica de Home Assistant para previsiones en los gráficos. ¡No es una entidad sensor, sino una entidad weather! (Opcional)"
+        }
+      },
+      "helpers": {
+        "title": "Sensores kWh faltantes",
+        "description": "Faltan **{missing_count}** sensor(es) de kWh diarios:\n\n**{missing_sensors}**\n\nEstos se pueden crear a partir de tus sensores de Vatios.\n\n**Cómo hacerlo:**\n1. Ve a Configuración → Dispositivos y servicios → Ayudantes\n2. Crea un sensor \"Integral de suma de Riemann\" (W → kWh)\n3. Crea un \"Medidor de consumo\" con reinicio diario\n\nO añade lo siguiente a configuration.yaml:\n\n```yaml\n{yaml_config}\n```",
+        "data": {
+          "show_yaml": "He copiado la configuración YAML"
+        },
+        "data_description": {
+          "show_yaml": "Confirma para continuar. También puedes crear los sensores más tarde."
+        }
+      },
+      "settings": {
+        "title": "Configuración",
+        "description": "Configura informes automáticos y facturación.",
+        "data": {
+          "auto_generate": "Generación automática de informes",
+          "generate_weekly": "Informes semanales",
+          "generate_monthly": "Informes mensuales",
+          "theme": "Tema de color",
+          "dashboard_style": "Estilo de flujo energético",
+          "billing_start_month": "Mes de inicio de facturación",
+          "billing_start_day": "Día de inicio de facturación",
+          "billing_price_mode": "Modo de tarifa",
+          "billing_fixed_price": "Precio de respaldo (ct/kWh)",
+          "feed_in_tariff": "Tarifa de inyección (ct/kWh)"
+        },
+        "data_description": {
+          "auto_generate": "Generar automáticamente informes semanales y mensuales",
+          "generate_weekly": "Crear un informe semanal cada domingo",
+          "generate_monthly": "Crear un informe mensual el 1.º de cada mes",
+          "theme": "Tema oscuro o claro para los gráficos",
+          "dashboard_style": "Diagrama de flujo energético 3D isométrico o clásico 2D",
+          "billing_start_month": "Mes en que comienza tu año de facturación",
+          "billing_start_day": "Día en que comienza tu año de facturación",
+          "billing_price_mode": "Dinámico: precios por hora de Grid Price Monitor. Fijo: precio único. Sin tarifa: desactiva indicadores financieros.",
+          "billing_fixed_price": "Se usa cuando Grid Price Monitor no proporciona precio",
+          "feed_in_tariff": "Tarifa de inyección a red en céntimos por kWh"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "SFML Stats ya está configurado.",
+      "raspberry_pi_not_supported": "La instalación en Raspberry Pi no está soportada. La integración usa matplotlib para generar gráficos, lo que causa problemas de rendimiento en Raspberry Pi. Por favor, usa un sistema más potente.",
+      "proxmox_not_recommended": "Se detectó instalación en host Proxmox VE. Home Assistant debería ejecutarse en una VM o contenedor LXC, no directamente en el host Proxmox."
+    },
+    "error": {
+      "cannot_connect": "Error de conexión",
+      "unknown": "Error desconocido"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de SFML Stats",
+        "description": "Selecciona una categoría para configurar.",
+        "data": {
+          "menu_choice": "Categoría"
+        },
+        "menu_options": {
+          "sensors_main": "⚡ Sensores principales (Obligatorio)",
+          "sensors_battery": "🔋 Sensores de batería (Opcional)",
+          "sensors_smartmeter": "📊 Contador (Opcional)",
+          "consumers": "🏠 Consumidores (Bomba de calor, Resistencia, Wallbox)",
+          "settings": "⚙️ Configuración",
+          "advanced": "🔧 Avanzado"
+        }
+      },
+      "sensors_main": {
+        "title": "Sensores principales (Obligatorio)",
+        "description": "**🏠 Consumo del hogar es el sensor más importante!**\n\nEl sensor de W es necesario para el diagrama de flujo energético en tiempo real.\nOpcional: sensor de kWh adicional para estadísticas diarias más precisas.\nLa potencia solar se obtiene automáticamente de SFML.",
+        "data": {
+          "sensor_home_consumption": "🏠 Consumo del hogar (W)",
+          "sensor_home_consumption_daily": "🏠 Consumo del hogar hoy (kWh)",
+          "sensor_solar_to_house": "☀️ Solar → Casa (W)",
+          "sensor_price_total": "💰 Precio actual (ct/kWh)",
+          "weather_entity": "🌤️ Entidad meteorológica"
+        },
+        "data_description": {
+          "sensor_home_consumption": "Unidad: Vatios. Consumo eléctrico total actual del hogar, incluyendo todos los consumidores. Necesario para el diagrama de flujo energético en tiempo real. (Obligatorio)",
+          "sensor_home_consumption_daily": "Unidad: kWh. Consumo total del hogar desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_solar_to_house": "Unidad: Vatios. Parte de la potencia solar que fluye directamente a la casa. No es la producción total — ¡solo la parte de autoconsumo! (Obligatorio)",
+          "sensor_price_total": "Unidad: ct/kWh (bruto). Sensor dinámico, p. ej. de Tibber, Octopus Energy o EPEX Spot. No necesario con tarifa fija. (Opcional)",
+          "weather_entity": "Formato: weather.xxx. Integración meteorológica de Home Assistant para previsiones en los gráficos. ¡No es una entidad sensor, sino una entidad weather! (Opcional)"
+        }
+      },
+      "sensors_battery": {
+        "title": "Sensores de batería (Opcional)",
+        "description": "Configura solo si tienes un sistema de almacenamiento.\n\nLos sensores de W son necesarios para el diagrama de flujo energético en tiempo real.\nLos sensores de kWh son opcionales — si están disponibles, proporcionan estadísticas diarias más precisas.\n\n**☀️ Solar→Casa y ⚡ Red→Casa se calculan automáticamente!**",
+        "data": {
+          "sensor_solar_to_battery": "☀️ Solar → Batería (W)",
+          "sensor_battery_charge_solar_daily": "☀️ Solar → Batería hoy (kWh)",
+          "sensor_battery_to_house": "🔋 Batería → Casa (W)",
+          "sensor_battery_discharge_daily": "🔋 Batería → Casa hoy (kWh)",
+          "sensor_grid_to_battery": "⚡ Red → Batería (W)",
+          "sensor_battery_charge_grid_daily": "⚡ Red → Batería hoy (kWh)",
+          "sensor_battery_soc": "📊 Estado de carga de batería (%)",
+          "sensor_battery_to_grid": "🔋 Batería → Red (W)",
+          "sensor_battery_power": "🔋 Potencia total de batería (W)"
+        },
+        "data_description": {
+          "sensor_solar_to_battery": "Unidad: Vatios. Potencia solar que fluye directamente a la batería. ¡Solo la parte de carga solar, no la carga total! (Opcional)",
+          "sensor_battery_charge_solar_daily": "Unidad: kWh. Energía solar cargada en la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_to_house": "Unidad: Vatios. Potencia descargada de la batería a la casa. ¡Solo la parte de descarga a la casa, no la descarga total! (Opcional)",
+          "sensor_battery_discharge_daily": "Unidad: kWh. Energía descargada de la batería a la casa hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_battery": "Unidad: Vatios. Potencia de red utilizada para cargar la batería. ¡Solo la parte de carga desde red, no la carga solar! (Opcional)",
+          "sensor_battery_charge_grid_daily": "Unidad: kWh. Energía de red usada para cargar la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_soc": "Unidad: Porcentaje (0–100). Estado de carga (SOC) actual de la batería. El valor debe estar entre 0 y 100, ¡no valores decimales como 0.0–1.0! (Opcional)",
+          "sensor_battery_to_grid": "Unidad: Vatios. Potencia de batería inyectada a la red. Solo relevante para inyección desde batería, p. ej. con precios negativos de electricidad. (Opcional)",
+          "sensor_battery_power": "Unidad: Vatios. Potencia total de batería en un solo sensor. Positivo = carga, Negativo = descarga. ¡Usar solo si no hay sensores separados de carga/descarga! (Opcional)"
+        }
+      },
+      "sensors_smartmeter": {
+        "title": "Sensores del contador (Opcional)",
+        "description": "Para valores de red precisos.\n\nLos sensores de W son necesarios para el diagrama de flujo energético en tiempo real.\nLos sensores de kWh son opcionales — si están disponibles, proporcionan estadísticas diarias más precisas.\n\n**Sin contador, exportación e importación serán estimadas.**",
+        "data": {
+          "sensor_smartmeter_import": "📥 Importación de red (W)",
+          "sensor_grid_import_daily": "📥 Importación de red hoy (kWh)",
+          "sensor_grid_to_house": "⚡ Red → Casa (W)",
+          "sensor_smartmeter_export": "📤 Exportación a red (W)",
+          "sensor_grid_export_daily": "📤 Exportación a red hoy (kWh)",
+          "sensor_house_to_grid": "📤 Inyección de excedentes (W)",
+          "sensor_grid_import_yearly": "📊 Importación de red anual (kWh)"
+        },
+        "data_description": {
+          "sensor_smartmeter_import": "Unidad: Vatios. Importación total de red en el punto de medición. ¡Incluye TODA la potencia de red — incluyendo carga de batería desde red! (Opcional)",
+          "sensor_grid_import_daily": "Unidad: kWh. Importación total de red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_house": "Unidad: Vatios. Potencia de red que fluye directamente a la casa. ¡Sin carga de batería desde red! Diferencia con Importación de red: Solo la parte de consumo doméstico. (Opcional)",
+          "sensor_smartmeter_export": "Unidad: Vatios. Exportación total en el punto de medición. ¡Incluye TODA la inyección — incluyendo inyección de batería a red! (Opcional)",
+          "sensor_grid_export_daily": "Unidad: kWh. Exportación total a red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_house_to_grid": "Unidad: Vatios. Potencia excedente inyectada a la red. ¡Solo excedentes solares, no inyección de batería! Diferencia con Exportación a red: Solo la parte de excedentes. (Opcional)",
+          "sensor_grid_import_yearly": "Unidad: kWh. Importación total de red del año calendario actual. Se utiliza para la facturación anual y previsión de costes. (Opcional)"
+        }
+      },
+      "sensors": {
+        "title": "Todos los sensores",
+        "description": "Configura todos los sensores.\n\n**Sensores de W** son necesarios para el diagrama de flujo energético en tiempo real.\n**Sensores de kWh** son opcionales para estadísticas diarias más precisas.\n\n**Unidades requeridas:**\n- Potencia: Vatios (W)\n- Energía: kWh (con reinicio diario)\n- SOC: Porcentaje (0-100)\n- Precio: ct/kWh",
+        "data": {
+          "sensor_home_consumption": "🏠 Consumo del hogar (W)",
+          "sensor_home_consumption_daily": "🏠 Consumo del hogar hoy (kWh)",
+          "sensor_solar_to_house": "☀️ Solar → Casa (W)",
+          "sensor_solar_to_battery": "☀️ Solar → Batería (W)",
+          "sensor_battery_charge_solar_daily": "☀️ Solar → Batería hoy (kWh)",
+          "sensor_battery_to_house": "🔋 Batería → Casa (W)",
+          "sensor_battery_discharge_daily": "🔋 Batería → Casa hoy (kWh)",
+          "sensor_grid_to_battery": "⚡ Red → Batería (W)",
+          "sensor_battery_charge_grid_daily": "⚡ Red → Batería hoy (kWh)",
+          "sensor_battery_soc": "📊 Estado de carga de batería (%)",
+          "sensor_battery_to_grid": "🔋 Batería → Red (W)",
+          "sensor_battery_power": "🔋 Potencia total de batería (W)",
+          "sensor_smartmeter_import": "📥 Importación de red (W)",
+          "sensor_grid_import_daily": "📥 Importación de red hoy (kWh)",
+          "sensor_grid_to_house": "⚡ Red → Casa (W)",
+          "sensor_smartmeter_export": "📤 Exportación a red (W)",
+          "sensor_grid_export_daily": "📤 Exportación a red hoy (kWh)",
+          "sensor_house_to_grid": "📤 Inyección de excedentes (W)",
+          "sensor_grid_import_yearly": "📊 Importación de red anual (kWh)",
+          "sensor_price_total": "💰 Precio actual (ct/kWh)",
+          "weather_entity": "🌤️ Entidad meteorológica"
+        },
+        "data_description": {
+          "sensor_home_consumption": "Unidad: Vatios. Consumo eléctrico total actual del hogar, incluyendo todos los consumidores. Necesario para el diagrama de flujo energético en tiempo real. (Obligatorio)",
+          "sensor_home_consumption_daily": "Unidad: kWh. Consumo total del hogar desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_solar_to_house": "Unidad: Vatios. Parte de la potencia solar que fluye directamente a la casa. No es la producción total — ¡solo la parte de autoconsumo! (Obligatorio)",
+          "sensor_solar_to_battery": "Unidad: Vatios. Potencia solar que fluye directamente a la batería. ¡Solo la parte de carga solar, no la carga total! (Opcional)",
+          "sensor_battery_charge_solar_daily": "Unidad: kWh. Energía solar cargada en la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_to_house": "Unidad: Vatios. Potencia descargada de la batería a la casa. ¡Solo la parte de descarga a la casa, no la descarga total! (Opcional)",
+          "sensor_battery_discharge_daily": "Unidad: kWh. Energía descargada de la batería a la casa hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_battery": "Unidad: Vatios. Potencia de red utilizada para cargar la batería. ¡Solo la parte de carga desde red, no la carga solar! (Opcional)",
+          "sensor_battery_charge_grid_daily": "Unidad: kWh. Energía de red usada para cargar la batería hoy. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_battery_soc": "Unidad: Porcentaje (0–100). Estado de carga (SOC) actual de la batería. El valor debe estar entre 0 y 100, ¡no valores decimales como 0.0–1.0! (Opcional)",
+          "sensor_battery_to_grid": "Unidad: Vatios. Potencia de batería inyectada a la red. Solo relevante para inyección desde batería, p. ej. con precios negativos de electricidad. (Opcional)",
+          "sensor_battery_power": "Unidad: Vatios. Potencia total de batería en un solo sensor. Positivo = carga, Negativo = descarga. ¡Usar solo si no hay sensores separados de carga/descarga! (Opcional)",
+          "sensor_smartmeter_import": "Unidad: Vatios. Importación total de red en el punto de medición. ¡Incluye TODA la potencia de red — incluyendo carga de batería desde red! (Opcional)",
+          "sensor_grid_import_daily": "Unidad: kWh. Importación total de red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_grid_to_house": "Unidad: Vatios. Potencia de red que fluye directamente a la casa. ¡Sin carga de batería desde red! Diferencia con Importación de red: Solo la parte de consumo doméstico. (Opcional)",
+          "sensor_smartmeter_export": "Unidad: Vatios. Exportación total en el punto de medición. ¡Incluye TODA la inyección — incluyendo inyección de batería a red! (Opcional)",
+          "sensor_grid_export_daily": "Unidad: kWh. Exportación total a red desde medianoche. Debe reiniciarse a las 0:00. Si no está disponible, el valor se calcula a partir del sensor de W. (Opcional)",
+          "sensor_house_to_grid": "Unidad: Vatios. Potencia excedente inyectada a la red. ¡Solo excedentes solares, no inyección de batería! Diferencia con Exportación a red: Solo la parte de excedentes. (Opcional)",
+          "sensor_grid_import_yearly": "Unidad: kWh. Importación total de red del año calendario actual. Se utiliza para la facturación anual y previsión de costes. (Opcional)",
+          "sensor_price_total": "Unidad: ct/kWh (bruto). Sensor dinámico, p. ej. de Tibber, Octopus Energy o EPEX Spot. No necesario con tarifa fija. (Opcional)",
+          "weather_entity": "Formato: weather.xxx. Integración meteorológica de Home Assistant para previsiones en los gráficos. ¡No es una entidad sensor, sino una entidad weather! (Opcional)"
+        }
+      },
+      "consumers": {
+        "title": "Sensores de consumidores (Opcional)",
+        "description": "Configura sensores para consumidores adicionales.\n\nEstos son OPCIONALES — configura solo si tienes estos dispositivos.\n\n**Unidades requeridas:**\n- Potencia: Vatios (W)\n- Energía: kWh (con reinicio diario)\n- COP: Número decimal (p. ej. 3.5)\n- Estado: Texto (charging/idle)",
+        "data": {
+          "sensor_heatpump_power": "🌡️ Bomba de calor potencia (W)",
+          "sensor_heatpump_daily": "🌡️ Bomba de calor hoy (kWh)",
+          "sensor_heatpump_cop": "🌡️ Bomba de calor COP",
+          "sensor_heatingrod_power": "🔥 Resistencia eléctrica potencia (W)",
+          "sensor_heatingrod_daily": "🔥 Resistencia eléctrica hoy (kWh)",
+          "sensor_wallbox_power": "🚗 Wallbox potencia (W)",
+          "sensor_wallbox_daily": "🚗 Wallbox hoy (kWh)",
+          "sensor_wallbox_state": "🚗 Wallbox estado"
+        },
+        "data_description": {
+          "sensor_heatpump_power": "Unidad: Vatios. Consumo eléctrico actual de la bomba de calor. ¡Solo consumo del compresor, no la salida de calor! (Opcional)",
+          "sensor_heatpump_daily": "Unidad: kWh. Consumo eléctrico de la bomba de calor desde medianoche. Debe reiniciarse a las 0:00 (p. ej. vía Utility Meter). (Opcional)",
+          "sensor_heatpump_cop": "Unidad: Decimal (p. ej. 3.5). Coeficiente de rendimiento — relación entre calor generado y electricidad consumida. Por defecto: 3.5 si no hay sensor disponible. (Opcional)",
+          "sensor_heatingrod_power": "Unidad: Vatios. Consumo eléctrico actual de la resistencia. Se muestra como consumidor separado en el flujo energético. (Opcional)",
+          "sensor_heatingrod_daily": "Unidad: kWh. Consumo de la resistencia desde medianoche. Debe reiniciarse a las 0:00 (p. ej. vía Utility Meter). (Opcional)",
+          "sensor_wallbox_power": "Unidad: Vatios. Potencia de carga actual del wallbox/estación de carga. ¡Solo potencia de carga real, no consumo en espera! (Opcional)",
+          "sensor_wallbox_daily": "Unidad: kWh. Consumo de carga del wallbox desde medianoche. Debe reiniciarse a las 0:00 (p. ej. vía Utility Meter). (Opcional)",
+          "sensor_wallbox_state": "Formato: Texto. Valores posibles: 'charging' = vehículo cargando, 'idle' = listo/sin carga. Otros valores se ignoran. (Opcional)"
+        }
+      },
+      "settings": {
+        "title": "Configuración",
+        "description": "Configura informes, tema y facturación.",
+        "data": {
+          "auto_generate": "Generación automática",
+          "generate_weekly": "Informes semanales",
+          "generate_monthly": "Informes mensuales",
+          "theme": "Tema de color",
+          "dashboard_style": "Estilo de flujo energético",
+          "billing_start_month": "Mes de inicio de facturación",
+          "billing_start_day": "Día de inicio de facturación",
+          "billing_price_mode": "Modo de tarifa",
+          "billing_fixed_price": "Precio de respaldo (ct/kWh)",
+          "feed_in_tariff": "Tarifa de inyección (ct/kWh)"
+        },
+        "data_description": {
+          "auto_generate": "Generar informes automáticamente según programación",
+          "generate_weekly": "Crear un informe semanal cada domingo",
+          "generate_monthly": "Crear un informe mensual el 1.º de cada mes",
+          "theme": "Tema oscuro o claro para los gráficos",
+          "dashboard_style": "Diagrama de flujo energético 3D isométrico o clásico 2D",
+          "billing_start_month": "Mes en que comienza tu año de facturación",
+          "billing_start_day": "Día en que comienza tu año de facturación",
+          "billing_price_mode": "Dinámico: precios por hora de Grid Price Monitor. Fijo: precio único. Sin tarifa: desactiva indicadores financieros.",
+          "billing_fixed_price": "Se usa cuando Grid Price Monitor no proporciona precio",
+          "feed_in_tariff": "Tarifa de inyección a red en céntimos por kWh"
+        }
+      },
+      "advanced": {
+        "title": "Opciones avanzadas",
+        "description": "Opciones de configuración adicionales.",
+        "data": {
+          "menu_choice": "Opción"
+        },
+        "menu_options": {
+          "panels": "Paneles PV",
+          "panel_group_names": "Nombres de grupos de paneles",
+          "forecast_comparison": "Comparación de pronósticos",
+          "debug_mode": "Full-KI Transparency Mode"
+        }
+      },
+      "panels": {
+        "title": "Sensores de paneles PV",
+        "description": "Configura hasta 4 paneles/strings PV individuales.\n\n**Unidad requerida:** Vatios (W)",
+        "data": {
+          "panel1_name": "Panel 1 nombre",
+          "sensor_panel1_power": "☀️ Panel 1 potencia (W)",
+          "panel2_name": "Panel 2 nombre",
+          "sensor_panel2_power": "☀️ Panel 2 potencia (W)",
+          "panel3_name": "Panel 3 nombre",
+          "sensor_panel3_power": "☀️ Panel 3 potencia (W)",
+          "panel4_name": "Panel 4 nombre",
+          "sensor_panel4_power": "☀️ Panel 4 potencia (W)"
+        },
+        "data_description": {
+          "panel1_name": "Nombre para panel/string 1 (p. ej. 'Sur', 'Este', 'Buhardilla'). Se usa en gráficos e informes. (Opcional)",
+          "sensor_panel1_power": "Unidad: Vatios. Potencia actual del string/panel PV. Valor directamente del inversor, ¡no de un sensor calculado! (Opcional)",
+          "panel2_name": "Nombre para panel/string 2 (p. ej. 'Sur', 'Este', 'Buhardilla'). Se usa en gráficos e informes. (Opcional)",
+          "sensor_panel2_power": "Unidad: Vatios. Potencia actual del string/panel PV. Valor directamente del inversor, ¡no de un sensor calculado! (Opcional)",
+          "panel3_name": "Nombre para panel/string 3 (p. ej. 'Sur', 'Este', 'Buhardilla'). Se usa en gráficos e informes. (Opcional)",
+          "sensor_panel3_power": "Unidad: Vatios. Potencia actual del string/panel PV. Valor directamente del inversor, ¡no de un sensor calculado! (Opcional)",
+          "panel4_name": "Nombre para panel/string 4 (p. ej. 'Sur', 'Este', 'Buhardilla'). Se usa en gráficos e informes. (Opcional)",
+          "sensor_panel4_power": "Unidad: Vatios. Potencia actual del string/panel PV. Valor directamente del inversor, ¡no de un sensor calculado! (Opcional)"
+        }
+      },
+      "panel_group_names": {
+        "title": "Nombres de grupos de paneles",
+        "description": "Formato: NombreOriginal=NuevoNombre (separados por coma)\n\nEjemplo: {example}",
+        "data": {
+          "panel_group_names_input": "Mapeo de nombres"
+        },
+        "data_description": {
+          "panel_group_names_input": "Renombrar grupos de paneles. Formato: Antiguo=Nuevo,Antiguo2=Nuevo2"
+        }
+      },
+      "forecast_comparison": {
+        "title": "Comparación de pronósticos",
+        "description": "Configura hasta 2 entidades externas de pronóstico para el gráfico comparativo de 7 días.\n\n**Unidad requerida:** kWh (pronóstico diario)",
+        "data": {
+          "forecast_entity_1": "📈 Pronóstico 1 (Entity ID)",
+          "forecast_entity_1_name": "Nombre del pronóstico 1",
+          "forecast_entity_2": "📈 Pronóstico 2 (Entity ID)",
+          "forecast_entity_2_name": "Nombre del pronóstico 2"
+        },
+        "data_description": {
+          "forecast_entity_1": "Formato: sensor.xxx. Sensor con pronóstico diario de generación en kWh (p. ej. sensor.solcast_forecast_today). Debe contener la generación diaria esperada como número. (Opcional)",
+          "forecast_entity_1_name": "Nombre en el gráfico comparativo (p. ej. 'Solcast'). Se muestra en la leyenda de la comparación de 7 días. (Opcional)",
+          "forecast_entity_2": "Formato: sensor.xxx. Sensor con pronóstico diario de generación en kWh (p. ej. sensor.forecast_solar_energy_today). Debe contener la generación diaria esperada como número. (Opcional)",
+          "forecast_entity_2_name": "Nombre en el gráfico comparativo (p. ej. 'Forecast.Solar'). Se muestra en la leyenda de la comparación de 7 días. (Opcional)"
+        }
+      },
+      "debug_mode": {
+        "title": "Full-KI Transparency Mode (¡solo desarrolladores!)",
+        "description": "Mostrar/ocultar estadísticas y gráficos avanzados de KI.\nSe requiere código de acceso.",
+        "data": {
+          "debug_code": "Código de acceso",
+          "show_panel_groups": "Activar Full-KI Transparency Mode"
+        },
+        "data_description": {
+          "debug_code": "Introduce el código de acceso de desarrollador",
+          "show_panel_groups": "Muestra gráficos avanzados como producción diaria, facturación, estado de KI y grupos de paneles"
+        }
+      }
+    },
+    "error": {
+      "invalid_code": "¡Código de acceso inválido!"
+    }
+  }
+}

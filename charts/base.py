@@ -92,10 +92,11 @@ class BaseChart(ABC):
             )
             plt.close(self._fig)
 
-        await self._run_in_executor(_save_sync)
-
-        _LOGGER.info("Chart gespeichert: %s", file_path)
-        self._fig = None
+        try:
+            await self._run_in_executor(_save_sync)
+            _LOGGER.info("Chart gespeichert: %s", file_path)
+        finally:
+            self._fig = None
 
         return file_path
 

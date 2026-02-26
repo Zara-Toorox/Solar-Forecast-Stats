@@ -91,6 +91,156 @@
     --border-accent: rgba(8, 145, 178, 0.3);
 }
 
+/* ===== LIQUID GLASS THEME ===== */
+:root.glass-theme {
+    --bg-dark: rgba(13, 17, 23, 0.3);
+    --bg-medium: rgba(22, 27, 34, 0.25);
+    --bg-light: rgba(33, 38, 45, 0.3);
+    --bg-card: rgba(255, 255, 255, 0.08);
+    --bg-card-hover: rgba(255, 255, 255, 0.12);
+    --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04));
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-accent: rgba(255, 255, 255, 0.20);
+    --border-glow: rgba(255, 255, 255, 0.35);
+}
+
+/* Eigenes Hintergrundbild für Glass */
+:root.glass-theme #app::before {
+    background-image: url('/api/sfml_stats/assets/sfml_background.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(1.1) saturate(1.2);
+}
+
+/* Hintergrund-Overlay stark reduzieren für Glass */
+:root.glass-theme #app::after {
+    background:
+        linear-gradient(180deg,
+            rgba(13, 17, 23, 0.5) 0%,
+            rgba(13, 17, 23, 0.15) 12%,
+            transparent 35%
+        ),
+        linear-gradient(0deg,
+            rgba(13, 17, 23, 0.4) 0%,
+            transparent 25%
+        ),
+        rgba(13, 17, 23, 0.10);
+}
+
+/* Universeller Glass-Card Stil */
+.glass-theme .energy-flow-container,
+.glass-theme .energy-balance-container,
+.glass-theme .power-sources-card,
+.glass-theme .forecast-overview-container,
+.glass-theme .stats-container,
+.glass-theme .chart-card,
+.glass-theme .stat-card,
+.glass-theme .weather-widget,
+.glass-theme .forecast-card,
+.glass-theme .panel-card,
+.glass-theme .kpi-card,
+.glass-theme .energy-list-card,
+.glass-theme .collapsible-section > .section-header {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-xl);
+}
+
+/* Header Glass */
+.glass-theme .header {
+    background: rgba(13, 17, 23, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(1.4);
+    -webkit-backdrop-filter: blur(30px) saturate(1.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Section Headers */
+.glass-theme .section-header {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.glass-theme .section-header:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Hover-Effekte sanfter */
+.glass-theme .stat-card:hover,
+.glass-theme .panel-card:hover,
+.glass-theme .chart-card:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    transform: translateY(-2px);
+}
+
+/* Modals */
+.glass-theme .modal-overlay {
+    background: rgba(10, 10, 26, 0.7);
+    backdrop-filter: blur(15px);
+}
+
+.glass-theme .modal-container {
+    background: rgba(28, 33, 40, 0.85) !important;
+    backdrop-filter: blur(30px) saturate(1.3);
+    -webkit-backdrop-filter: blur(30px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-theme .modal-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Buttons & Toggles */
+.glass-theme .theme-toggle,
+.glass-theme .style-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+/* AI Status Bar */
+.glass-theme .ai-status-card {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(15px) saturate(1.2);
+    -webkit-backdrop-filter: blur(15px) saturate(1.2);
+}
+
+/* Toast Notifications */
+.glass-theme .toast {
+    background: rgba(28, 33, 40, 0.85);
+    backdrop-filter: blur(20px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Modal Tabs */
+.glass-theme .modal-tab.active {
+    background: rgba(255, 255, 255, 0.10);
+}
+
+/* Colored card accents bleiben erhalten */
+.glass-theme .stat-card::before,
+.glass-theme .kpi-card::before {
+    opacity: 0.8;
+}
+
 /* Theme Toggle Button */
 .theme-toggle {
     background: var(--bg-card);
@@ -390,7 +540,7 @@ body {
     z-index: -2;
 
     /* Hintergrundbild - über assets endpoint */
-    background-image: url('/api/sfml_stats/assets/background.webp');
+    background-image: url('/api/sfml_stats/assets/sfml_background.jpg');
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
