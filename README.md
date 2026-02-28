@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Zara-Toorox/sfml_stats"><img src="https://img.shields.io/badge/version-12.6.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Zara-Toorox/sfml_stats"><img src="https://img.shields.io/badge/version-12.8.0-blue.svg" alt="Version"></a>
   <a href="https://hacs.xyz/"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Proprietary%20Non--Commercial-green.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/platform-x86__64-lightgrey.svg" alt="Platform">
