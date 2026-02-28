@@ -96,7 +96,7 @@ class DatabaseConnectionManager:
 
         try:
             self._connection = await aiosqlite.connect(
-                str(self._db_path), timeout=60.0, isolation_level=None
+                str(self._db_path), timeout=60.0, isolation_level="IMMEDIATE"
             )
             self._connection.row_factory = aiosqlite.Row
             # Match SFML PRAGMA settings for shared DB compatibility @zara
@@ -189,16 +189,8 @@ class DatabaseConnectionManager:
             if not await self._ensure_connected():
                 raise RuntimeError("Database not available")
             try:
-                await self._connection.execute("BEGIN IMMEDIATE")
-                try:
-                    await self._connection.execute(query, params)
-                    await self._connection.commit()
-                except Exception:
-                    try:
-                        await self._connection.rollback()
-                    except Exception:
-                        pass
-                    raise
+                await self._connection.execute(query, params)
+                await self._connection.commit()
                 return
             except aiosqlite.OperationalError as err:
                 if "database is locked" in str(err) and attempt < 2:
