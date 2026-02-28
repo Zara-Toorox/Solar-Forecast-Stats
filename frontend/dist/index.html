@@ -1247,8 +1247,8 @@
                     <div class="chart-stats">
                         <span class="chart-stat" style="color: #00ff88;">Ertrag: {{ energyFlow.statistics.solar_yield_daily?.toFixed(2) || '—' }} kWh</span>
                         <span class="chart-stat" style="color: #8b5cf6;">Prognose: {{ forecast.todayTotal?.toFixed(2) || '—' }} kWh</span>
-                        <span class="chart-stat" :style="{color: todayAccuracy >= 80 ? '#00ff88' : todayAccuracy >= 50 ? '#ffdd00' : '#ef4444'}">
-                            Genauigkeit: {{ todayAccuracy?.toFixed(0) || '—' }}%
+                        <span class="chart-stat" :style="{color: Math.abs((todayAccuracy || 0) - 100) <= 20 ? '#00ff88' : Math.abs((todayAccuracy || 0) - 100) <= 50 ? '#ffdd00' : '#ef4444'}">
+                            Abweichung: {{ todayAccuracy != null ? ((todayAccuracy - 100) >= 0 ? '+' : '') + (todayAccuracy - 100).toFixed(0) + '%' : '—' }}
                         </span>
                     </div>
                 </div>
@@ -1645,8 +1645,8 @@
                     <div class="kpi-label">kWh diese Woche</div>
                 </div>
                 <div v-show="!isSectionCollapsed('kpis')" class="kpi-card accuracy">
-                    <div class="kpi-value">{{ kpis.avgAccuracy?.toFixed(0) || '—' }}%</div>
-                    <div class="kpi-label">Ø Genauigkeit</div>
+                    <div class="kpi-value">{{ kpis.avgAccuracy != null ? ((kpis.avgAccuracy - 100) >= 0 ? '+' : '') + (kpis.avgAccuracy - 100).toFixed(0) + '%' : '—' }}</div>
+                    <div class="kpi-label">Ø Abweichung</div>
                 </div>
                 <div v-show="!isSectionCollapsed('kpis')" class="kpi-card price">
                     <div class="kpi-value">{{ kpis.priceMin?.toFixed(0) || '—' }}-{{ kpis.priceMax?.toFixed(0) || '—' }}</div>
@@ -1769,8 +1769,8 @@
                             <div class="modal-stat-label">Dieses Jahr</div>
                         </div>
                         <div class="modal-stat-card">
-                            <div class="modal-stat-value">{{ solarModal.stats.avgAccuracy?.toFixed(1) || '—' }}%</div>
-                            <div class="modal-stat-label">Ø Genauigkeit</div>
+                            <div class="modal-stat-value">{{ solarModal.stats.avgAccuracy != null ? ((solarModal.stats.avgAccuracy - 100) >= 0 ? '+' : '') + (solarModal.stats.avgAccuracy - 100).toFixed(1) + '%' : '—' }}</div>
+                            <div class="modal-stat-label">Ø Abweichung</div>
                         </div>
                         <div class="modal-stat-card">
                             <div class="modal-stat-value">{{ solarModal.stats.peakPower?.toFixed(0) || '—' }} W</div>
@@ -7201,9 +7201,10 @@
                                 params.forEach(p => {
                                     result += `${p.marker} ${p.seriesName}: <b>${p.value?.toFixed(2) || 0} kWh</b><br/>`;
                                 });
-                                // Genauigkeit mit Farbe
-                                const accColor = acc >= 80 ? '#00ff88' : acc >= 50 ? '#ffdd00' : '#ef4444';
-                                result += `<span style="color:${accColor}">📊 Genauigkeit: <b>${acc.toFixed(0)}%</b></span>`;
+                                // Abweichung mit Farbe
+                                const dev = acc - 100;
+                                const devColor = Math.abs(dev) <= 20 ? '#00ff88' : Math.abs(dev) <= 50 ? '#ffdd00' : '#ef4444';
+                                result += `<span style="color:${devColor}">📊 Abweichung: <b>${dev >= 0 ? '+' : ''}${dev.toFixed(0)}%</b></span>`;
                                 return result;
                             }
                         },
@@ -7765,11 +7766,12 @@
                                         result += `${p.marker} ${p.seriesName}: <b>${parseFloat(p.value).toFixed(3)} ${unit}</b><br/>`;
                                     }
                                 });
-                                // Genauigkeit hinzufügen wenn beide Werte vorhanden
+                                // Abweichung hinzufügen wenn beide Werte vorhanden
                                 const acc = accuracyData[hourIdx];
                                 if (acc !== null) {
-                                    const accColor = acc >= 80 ? '#00ff88' : acc >= 50 ? '#ffdd00' : '#ef4444';
-                                    result += `<span style="color:${accColor}">📊 Genauigkeit: <b>${acc.toFixed(0)}%</b></span>`;
+                                    const dev = acc - 100;
+                                    const devColor = Math.abs(dev) <= 20 ? '#00ff88' : Math.abs(dev) <= 50 ? '#ffdd00' : '#ef4444';
+                                    result += `<span style="color:${devColor}">📊 Abweichung: <b>${dev >= 0 ? '+' : ''}${dev.toFixed(0)}%</b></span>`;
                                 }
                                 return result;
                             }

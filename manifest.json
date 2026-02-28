@@ -1,6 +1,6 @@
 {
   "domain": "sfml_stats",
-  "name": "SFML Stats",
+  "name": "Solar Forecast STATS",
   "codeowners": ["@Zara-Toorox"],
   "config_flow": true,
   "dependencies": ["http"],
@@ -9,7 +9,7 @@
     "matplotlib==3.9.2",
     "aiofiles>=23.0.0"
   ],
-  "version": "12.2.0",
+  "version": "12.6.0",
   "integration_type": "service",
   "iot_class": "local_polling",
   "documentation": "https://github.com/Zara-Toorox/sfml_stats",

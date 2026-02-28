@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Final
 
 DOMAIN: Final = "sfml_stats"
-NAME: Final = "SFML Stats"
-VERSION: Final = "12.2.0"
+NAME: Final = "Solar Forecast STATS"
+VERSION: Final = "12.6.0"
 
 SOLAR_FORECAST_ML_BASE: Final = Path("solar_forecast_ml")
 SOLAR_FORECAST_ML_STATS: Final = SOLAR_FORECAST_ML_BASE / "stats"

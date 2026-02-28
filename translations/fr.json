@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "SFML Stats - Bienvenue",
-        "description": "Bienvenue dans SFML Stats !\n\nCette intégration suit votre production solaire, batterie, consommation réseau et calcule les coûts.\n\nCliquez sur SUIVANT pour configurer vos capteurs.",
+        "title": "Solar Forecast STATS - Bienvenue",
+        "description": "Bienvenue dans Solar Forecast STATS !\n\nCette intégration suit votre production solaire, batterie, consommation réseau et calcule les coûts.\n\nCliquez sur SUIVANT pour configurer vos capteurs.",
         "data": {},
         "data_description": {}
       },
@@ -163,7 +163,7 @@
       }
     },
     "abort": {
-      "single_instance_allowed": "SFML Stats est déjà configuré.",
+      "single_instance_allowed": "Solar Forecast STATS est déjà configuré.",
       "raspberry_pi_not_supported": "L'installation sur Raspberry Pi n'est pas supportée. L'intégration utilise matplotlib pour la génération de graphiques, ce qui cause des problèmes de performance sur Raspberry Pi. Veuillez utiliser un système plus puissant.",
       "proxmox_not_recommended": "Installation sur hôte Proxmox VE détectée. Home Assistant devrait fonctionner dans une VM ou un conteneur LXC, pas directement sur l'hôte Proxmox."
     },
@@ -175,7 +175,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Options SFML Stats",
+        "title": "Options Solar Forecast STATS",
         "description": "Sélectionnez une catégorie à configurer.",
         "data": {
           "menu_choice": "Catégorie"
