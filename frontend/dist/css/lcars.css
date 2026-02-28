@@ -39,6 +39,10 @@
 /* ============================================
    BASE STYLES
    ============================================ */
+html {
+    height: 100%;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -49,10 +53,10 @@ body.lcars-theme {
     font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
     background: var(--lcars-bg);
     color: var(--lcars-text);
-    min-height: 100vh;
+    height: 100%;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* ============================================
@@ -62,8 +66,8 @@ body.lcars-theme {
     display: grid;
     grid-template-columns: clamp(100px, 12vw, 160px) 1fr clamp(100px, 12vw, 160px);
     grid-template-rows: auto 1fr auto;
-    min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    height: 100vh;
+    height: 100dvh;
     gap: 0;
 }
 
@@ -367,6 +371,7 @@ body.lcars-theme {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 /* Monitor Header */
@@ -409,8 +414,7 @@ body.lcars-theme {
 .lcars-monitor-content {
     flex: 1;
     position: relative;
-    min-height: clamp(280px, 50vh, 400px);
-    aspect-ratio: 2 / 1;
+    min-height: 0;
     container-type: inline-size;
 }
 
@@ -1071,10 +1075,6 @@ body.lcars-theme {
         font-size: clamp(18px, 4vw, 28px);
     }
 
-    .lcars-monitor-content {
-        min-height: clamp(250px, 45vh, 350px);
-        aspect-ratio: auto;
-    }
 }
 
 /* Tablet Portrait (900px and below) */
@@ -1166,10 +1166,6 @@ body.lcars-theme {
         display: none;
     }
 
-    .lcars-monitor-content {
-        min-height: clamp(220px, 40vh, 350px);
-        aspect-ratio: auto;
-    }
 
     .lcars-btn {
         padding: 10px 12px;
@@ -1211,9 +1207,6 @@ body.lcars-theme {
         font-size: 12px;
     }
 
-    .lcars-monitor-content {
-        min-height: clamp(200px, 35vh, 300px);
-    }
 
     .lcars-monitor-header {
         padding: 10px 15px;
@@ -1282,10 +1275,6 @@ body.lcars-theme {
         justify-content: space-between;
     }
 
-    .lcars-monitor-content {
-        min-height: clamp(180px, 30vh, 280px);
-    }
-
     .lcars-mobile-nav-inner {
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
@@ -1330,10 +1319,6 @@ body.lcars-theme {
         font-size: 10px;
     }
 
-    .lcars-monitor-content {
-        min-height: clamp(160px, 28vh, 250px);
-    }
-
     .lcars-forecast-table-header,
     .lcars-forecast-table-row {
         grid-template-columns: 1.2fr 1fr 1fr 0.7fr;
@@ -1372,9 +1357,6 @@ body.lcars-theme {
         font-size: 9px;
     }
 
-    .lcars-monitor-content {
-        min-height: 150px;
-    }
 }
 
 /* ============================================

@@ -1569,7 +1569,7 @@
                             <div class="energy-balance-icon">💰</div>
                             <div class="energy-balance-value purple">{{ energyBalance.estimatedCost?.toFixed(2) || '0.00' }}</div>
                             <div class="energy-balance-label">€ Stromkosten</div>
-                            <div class="energy-balance-sub">Ø {{ energyBalance.avgPrice?.toFixed(1) || 35 }} ct/kWh</div>
+                            <div class="energy-balance-sub">Ø {{ energyBalance.avgPrice?.toFixed(1) ?? '35.0' }} ct/kWh</div>
                         </div>
                         <div class="energy-balance-item savings" v-if="energyBalance.priceMode !== 'none'">
                             <div class="energy-balance-icon">💚</div>
@@ -6803,9 +6803,9 @@
 
                         // ===== FINANZEN =====
                         const finance = data.finance || {};
-                        energyBalance.estimatedCost = finance.grid_cost_eur || 0;
-                        energyBalance.savings = finance.savings_eur || 0;
-                        energyBalance.avgPrice = finance.avg_price_ct || 35;
+                        energyBalance.estimatedCost = finance.grid_cost_eur ?? 0;
+                        energyBalance.savings = finance.savings_eur ?? 0;
+                        energyBalance.avgPrice = finance.avg_price_ct ?? 35;
 
                         // ===== TARIF-MODUS =====
                         if (data.config?.price_mode) {
